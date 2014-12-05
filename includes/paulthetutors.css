@@ -1,0 +1,523 @@
+@charset "utf-8";
+/* CSS Document */
+
+/* Redefine Normals */
+.float_right {
+	float:right;
+}
+
+html{
+	overflow:scroll;
+}
+
+body {
+	margin:0;
+	padding:0;
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 12px;
+}
+
+a img {
+	border:0;
+}
+
+td {
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 12px;
+}
+tr {
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 12px;
+}
+.body_text {
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 12px;
+}
+th {
+	font-size: 16px;
+	font-weight: bold;
+}
+.bold_text {
+	font-weight: bold;
+}
+
+
+
+/* Redefine Normals */
+/* Headers */
+h1, .Head1, .pageheader {font-size: 20px; font-weight: bold; color: #000000; 
+	font-family: Arial, Helvetica, sans-serif;
+}
+
+.Head1_White {
+	font-size: 20px;
+	color: #FFFFFF;
+	font-weight: bold;
+	font-family: Arial, Helvetica, sans-serif;
+}
+
+.Head1_Green {
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 20px;
+	font-weight: bold;
+	color: #006633;
+	text-decoration: underline;
+}
+
+.Head1_Brown {
+	font-family: Arial, Helvetica, sans-serif;
+
+	font-size: 20px;
+	font-weight: bold;
+	color: #996633;
+	text-decoration: underline;
+}
+
+.Head2 {
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 16px;
+	font-weight: bold;
+}
+
+.Head2_Green {
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 16px;
+	font-weight: bold;
+	color: #006633;
+}
+
+.Head2_Brown {
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 16px;
+	font-weight: bold;
+	color: #996633;
+}
+
+.Head3 {
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 14px;
+	font-weight: bold;
+}
+.float_right {
+	float:right;
+}
+
+.form_comments {
+	font-size: 9px;
+}
+
+
+/*.................navigation_top....................*/
+
+a#logo-link {
+	position:absolute; 
+	display:block; 
+	height:83px; 
+	width:230px; 
+	background:none; !important
+}
+
+.home a{
+	width:105px;
+	padding:6px 0px 6px 0px;
+	display:block;
+	text-decoration:none;
+	background:url(images/navi_bg2.jpg) no-repeat;
+	font-family:Arial, Helvetica, sans-serif;
+	font-size:12px;
+	color:#010100;
+	text-align:center;
+}
+	
+.tlink2 a{
+	width:105px;
+	padding:6px 0px 6px 0px;
+	display:block;
+	text-decoration:none;
+	background:url(../images/navi_bg2.jpg) no-repeat;
+	font-family:Arial, Helvetica, sans-serif;
+	font-size:12px;
+	color:#010100;
+	text-align:center;
+	}
+	
+.tlink1 a{
+	width:105px;
+	padding:6px 0px 6px 0px;
+	display:block;
+	text-decoration:none;
+	background:url(../images/navi_bg1.jpg) no-repeat;
+	font-family:Arial, Helvetica, sans-serif;
+	font-size:12px;
+	color:#010100;
+	text-align:center;
+	}
+	
+.home a{
+	width:105px;
+	padding:6px 0px 6px 0px;
+	display:block;
+	text-decoration:none;
+	background:url(../images/navi_bg1.jpg) no-repeat;
+	font-family:Arial, Helvetica, sans-serif;
+	font-size:12px;
+	color:#010100;
+	text-align:center;
+}
+
+.Services a{
+	width:105px;
+	padding:6px 0px 6px 0px;
+	display:block;
+	text-decoration:none;
+	background:url(../images/navi_bg1.jpg) no-repeat;
+	font-family:Arial, Helvetica, sans-serif;
+	font-size:12px;
+	color:#010100;
+	text-align:center;
+	}
+.About a{
+	width:105px;
+	padding:6px 0px 6px 0px;
+	display:block;
+	text-decoration:none;
+	background:url(../images/navi_bg2.jpg) no-repeat;
+	font-family:Arial, Helvetica, sans-serif;
+	font-size:12px;
+	color:#010100;
+	text-align:center;
+	}
+.blog a{
+	width:105px;
+	padding:6px 0px 6px 0px;
+	display:block;
+	text-decoration:none;
+	background:url(../images/navi_bg1.jpg) no-repeat;
+	font-family:Arial, Helvetica, sans-serif;
+	font-size:12px;
+	color:#010100;
+	text-align:center;
+	}
+.Faq a{
+	width:105px;
+	padding:6px 0px 6px 0px;
+	display:block;
+	text-decoration:none;
+	background:url(../images/navi_bg2.jpg) no-repeat;
+	font-family:Arial, Helvetica, sans-serif;
+	font-size:12px;
+	color:#010100;
+	text-align:center;
+	}
+.Login a{
+	width:105px;
+	padding:6px 0px 6px 0px;
+	display:block;
+	text-decoration:none;
+	background:url(../images/navi_bg1.jpg) no-repeat;
+	font-family:Arial, Helvetica, sans-serif;
+	font-size:12px;
+	color:#010100;
+	text-align:center;
+	}
+.book_session a{
+	width:105px;
+	padding:6px 0px 6px 0px;
+	display:block;
+	text-decoration:none;
+	background:url(../images/navi_bg2.jpg) no-repeat;
+	font-family:Arial, Helvetica, sans-serif;
+	font-size:12px;
+	color:#010100;
+	text-align:center;
+	}
+.contact a{
+	width:105px;
+	padding:6px 0px 6px 0px;
+	display:block;
+	text-decoration:none;
+	background:url(../images/navi_bg2.jpg) no-repeat;
+	font-family:Arial, Helvetica, sans-serif;
+	font-size:12px;
+	color:#010100;
+	text-align:center;
+	}
+	
+a{
+	color:#0000ee;
+	cursor:pointer;
+}
+	
+.header_bg{
+	background:url(../images/top_bg.jpg) no-repeat;
+	height:85px;
+	padding:0px 35px 0px 25px;
+	}
+.header_right_txt{
+	font-family:Arial, Helvetica, sans-serif;
+	font-size:13px;
+	font-weight:bold;
+	color:#FFFFFF;
+	text-decoration:none;
+	padding:0px 0 0px 0;
+	}
+.footer_bg{
+	background:url(../images/footer_bgall.jpg) no-repeat;
+	padding:6px 0px 7px 0px;
+	}
+.footer_left_txt{
+	font-family:"Arial Narrow";
+	font-size:15px;
+	font-weight:bold;
+	color:#1f1a17;
+	font-style:italic;
+	}
+.footer_txt{
+	font-family:Arial, Helvetica, sans-serif;
+	font-size:10px;
+	font-weight:bold;
+	color:#FFFFFF;
+	}
+.content_box{
+    margin: 10px 0;
+}
+.book_text{
+	font-family:Arial, Helvetica, sans-serif;
+	font-size:12px;
+	color:#1f1a17;
+	line-height:14px;
+	}
+.news_text{
+	background:url(../images/left_box_mid.jpg) repeat-y; 
+	padding:0px 10px 0px 14px; 
+	height:0px; 
+	font-family:Arial, Helvetica, sans-serif; 
+	font-size:11px; 
+	color:#777577; 
+	line-height:13px; 
+	}
+.news_header{
+	font-family:Arial, Helvetica, sans-serif;
+	font-size:18px;
+	color:#6E2E2E;
+	line-height:18px;
+	font-weight:bold;
+	}
+	
+
+
+/* ============== New Tableless Left Navigation on Home Page ============ */
+
+.twocol-left {
+	width:160px;
+	float:left;
+}
+
+#register-button {
+    background: #7B191C;
+    border: 1px solid #3D2210;
+	color: #FFF;
+    display: block;
+    font-size: 14px;
+    font-weight: bold;
+    padding: 5px;
+    text-decoration: none;
+}
+
+a#register-button:hover {
+	background: #AE1E23;
+}
+
+#pay-button {
+	background: #009966;
+	border: 1px solid #006600;
+	color: #FFF;
+	display: block;
+	font-size: 14px;
+	font-weight: bold;
+	padding: 8px;
+	text-decoration: none;
+	background-color: #009966;
+	border-top-color: #FFFFFF;
+}
+
+ul.left_nav {
+	margin:0;
+	padding:0;
+}
+
+.left_nav li {
+    list-style: none outside none;
+    margin: 0 0 1px;
+	}
+
+.left_nav li a {
+    background-color: #A4703C;
+	border:1px solid #4E2612;
+    color: #FFFFFF;
+    display: block;
+    font-size: 13px;
+    font-weight: normal;
+    padding: 3px 0;
+    text-decoration: none;
+    text-transform: capitalize;
+	text-indent:3px;
+	width:99%; /* IE Fix */
+}
+
+.left_nav li a:hover {
+background: #63472B;
+}
+.nav-title {
+    color: #482C11;
+    font-size: 18px;
+    margin: 9px 0 0;
+    text-transform: uppercase;
+	text-decoration:none;
+}
+
+
+#about {
+	margin-bottom:20px;
+	}
+
+.twocol-main {
+	display: block;
+    float: right;
+    width: 705px;
+    margin-left:5px;
+    padding-left:5px;
+    border-left: 1px solid grey;
+}
+
+#home-page h1 {
+	ext-align:center;
+	margin:0;
+}
+
+/* ====== End of Tableless Left Navigation on home page ======= */
+
+
+
+
+
+
+
+.table_1{
+	border: solid 1px #999;
+	border-collapse: collapse; 
+}
+
+.a_grey{
+	color: #333;
+	cursor:pointer;
+}
+
+.a_grey:hover{
+	color: #666;
+}
+
+.a_white{
+	color: #fff;
+	cursor:pointer;
+}
+
+.a_white:hover{
+	color: #008800;
+}
+.text_success{
+	color:green;
+	font-weight:bold;
+}
+
+.text_error{
+	color:red;
+	font-weight:bold;
+}
+.td_header{
+	background: #996600;
+	padding-left:5px;
+	height: 40px;
+	font-size: 20px; 
+	font-weight: bold; 
+	color: #ffffff; 
+	font-family: Arial, Helvetica, sans-serif;
+}
+.log_div_error{padding:10px; background: #fee3e3; border: solid 1px #fa936e; color: #ff3131; font-size:12px; text-align:left; width:290px; margin-top:3px}
+.log_txt_error{color: #ff0000;}
+.log_txt_logged_out{color: #008800; font-weight:bold;}
+.a_blue{color: #008800; font-weight:bold;}
+
+
+/* SAT Prep Pages */
+.correct {
+	font-size: 11px;
+	font-family: "Courier New", Courier, mono;
+	color:#009933;
+}
+.wrong {
+	font-size: 11px;
+	font-family: "Courier New", Courier, mono;
+	color:#FF0000;
+}
+.blank {
+	font-size: 11px;
+	font-family: "Courier New", Courier, mono;
+	color:#000000;
+	
+}
+
+/* SAT Prep Pages */
+
+
+.styleNum {
+	font-size: 11px;
+	font-family: "Courier New", Courier, mono;
+	color:#000000;
+	font-weight:bold;
+	
+}
+
+.align-center {
+	display:block;
+	margin:0 auto;
+}
+	
+.center-text {
+	text-align:center;
+}
+
+.clear {
+	clear:both;
+}
+
+a.other, a.other:active, a.other:visited { color: #090; }
+a.work_hours, a.work_hours:active, a.work_hours:visited { color: #900; }
+.cal_bottom {border-top: 1px dashed #999; margin-top:5px; }
+.cal_top, div.sched_container {border-bottom: 1px dashed #999; margin-bottom:5px;}
+td.tutsched {vertical-align: top;}
+
+ul.rate_tut { list-style:none; margin-bottom:1em; padding-left:8px; }
+li.rate_tut { font-size:120%; font-weight:bold; color: #006633; list-style:none; }
+ul.rate_type { list-style:disc; margin-bottom:1em; font-weight:normal; }
+li.rate_type { font-size:80%; color: black; }
+
+.testimonial { font-style:italic; }
+.testimonial_wrapper { padding-bottom:20px; margin-bottom:20px; border-bottom:1px dotted #ccc; }
+#write_testimonial { padding-bottom:20px; margin-bottom:20px; }
+.testimonial-attrib { display:block; margin-left:8px; }
+
+form dl dt { clear:both; width:33%; float:left; text-align:left; }
+form dl dd { width:66%; float:left; margin:0 0 0.5em 0.25em; }
+.red_font {
+	color: #F00;
+}
+
+/* families */
+.notes {
+   height: 5em;
+}
+.expand {
+    height: 10em; 
+    padding: 3px;
+}

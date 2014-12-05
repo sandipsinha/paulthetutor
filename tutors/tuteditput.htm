@@ -1,0 +1,79 @@
+<?php
+
+
+if(isset($_POST['changepassword']))
+{
+	session_start();
+	$id = $_SESSION['tutor_id'];
+	$old_password = $_POST['old_password'];
+	$new_password = $_POST['new_password'];
+	$cnew_password= $_POST['cnew_password'];
+	
+	if($new_password != $cnew_password)
+	{
+		echo "Passwords do not match";
+		exit;
+	}
+	
+	if($new_password == "")
+	{
+		echo "New Password cannot be blank";
+		exit;
+	}
+	
+	
+	
+	
+	
+	
+	$query = "SELECT * FROM PT_Tutors WHERE id = $id AND password = '$old_password'";
+	
+	$res = mysql_query($query);
+	
+	if(mysql_num_rows($res)==0)
+		{
+			echo "Incorrect old passwrd";
+			exit;
+		}
+	
+	$query = "UPDATE PT_Tutors SET
+			password = '$new_password' 
+			WHERE id = $id AND password = '$old_password'";
+			
+	if( mysql_query($query))
+		echo "Successfully changed password";
+	else
+		echo mysql_error();
+}
+
+else if(isset($_POST['tid']))
+{
+		session_start();
+		
+
+		$id = $_SESSION['tutor_id'];
+		$first_name = $_POST['first_name'];
+		$last_name = $_POST['last_name'];
+		$email = $_POST['email'];
+		$phone = $_POST['phone'];
+		$subjects = $_POST['subjects'];
+		$bio = $_POST['bio'];
+		
+		$query = "UPDATE PT_Tutors SET
+				  first_name = '$first_name', 
+				  last_name = '$last_name', 
+				  email = '$email', 
+				  mobile_phone = '$phone', 
+				  subjects = '$subjects', 
+				  bio = '$bio' 
+				  WHERE id = $id";
+		
+		
+		if(mysql_query($query))
+			echo "Saved!";
+		else 
+			echo mysql_error();
+
+}
+
+?>

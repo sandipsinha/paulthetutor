@@ -1,0 +1,47 @@
+<link href="../NewPTTcss.css" rel="stylesheet" type="text/css">
+<style type="text/css">
+<!--
+.plain {
+	font-weight: normal;
+}
+.style1 {font-weight: normal; font-size: 10px; }
+.style3 {font-weight: normal; font-size: 12px; }
+.style4 {font-size: 12px}
+.book_position {
+	left: 5px;
+	top: 450px;
+	position: absolute;
+}
+-->
+</style>
+</head>
+
+      <form name="form1" method="post" action="putstudentinfo.php">
+
+<table width="686" border="3" cellpadding="5" cellspacing="0" background="../images/flowbg.gif">
+  <tr >
+    <td height="25" colspan="2" valign="top" class="Head1_Green">Please Enter Your Child's Information 
+<?
+$fid = $_REQUEST[fid];
+
+// $fid = $_GET[fid];
+?>	
+	
+	
+	
+	</td>
+   
+  </tr>
+        <? 
+		
+$strNotUsed = getIgnoreColumns('PTStudentInfo_New', 'PT_Table_Info');
+putHiddenField('fid', $fid);
+$strNotUsed .= ", archived";
+
+MySQL_BlankForm('PTStudentInfo_New', '', $arFieldsVals, $arFieldComments, $$arHidden, $strNotUsed, $tdStyle);
+?>	
+       
+
+ 
+</table>
+</form> 

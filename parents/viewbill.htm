@@ -1,0 +1,57 @@
+<link rel='stylesheet' type='text/css' href=$strAbsPath . '/paulthetutors_com/includes/paulthetutors.css' />
+<style type="text/css">
+<!--
+.style1 {
+	color: #FF0000;
+	font-weight: bold;
+}
+-->
+</style>
+<table width="800" border="0" cellpadding="5" cellspacing="0" background="../images/flowbg.gif">
+  <tr>
+    <td width="526"><span class="Head1_Green"> View Bill</span></td>
+    <td width="140" rowspan="2" valign="top"><div align="right">
+	<!--<? //putParentsLinks(); ?>-->
+	<a href="index_parents.php">Parents Home Page</a><br/>
+	<a href="viewbill.php">View Bill</a><br/>
+	<a href="http://paulthetutors.com/contact.php">Contact Paul</a><br/><br/> <!--is the link correct?-->
+	
+	</div></td>
+  </tr>
+  <tr>
+    <td height="171" align="center" valign="top">
+      <table width="89%" height="" border="0" align="left" cellpadding="3" cellspacing="3" margin=0>
+		<tr>
+		<td><form name="form1" method="post" action="viewbillaction.php">
+		  <table width="73%"  border="0" cellspacing="2" cellpadding="2">
+            <tr>
+              <td width="39%"><div align="right"><strong>Month</strong></div></td>
+              <td width="61%"><? putMonthsSelect('month'); ?>
+</td>
+            </tr>
+            <tr>
+              <td><div align="right"><strong>Year</strong></div></td>
+              <td><? putYearsSelect(year); ?>
+</td>
+            </tr>
+            <tr>
+              <td colspan="2"><div align="center">
+                    <input type="submit" name="Submit" value="Submit">
+                    &nbsp;&nbsp;
+                    <input type="reset" name="Submit2" value="Reset">
+              </div></td>
+              </tr>
+          </table>
+		</form>
+	<span class="Head2">These are the payments which I have received and processed.  It may not reflect checks you have sent recently.</span><br><br>
+<? billing_history($fid,$type,'parents');?>
+
+</td>
+  </tr>
+</table>
+
+		
+		</td>
+		</tr>
+      </table>
+<?putPTTFooter();?>

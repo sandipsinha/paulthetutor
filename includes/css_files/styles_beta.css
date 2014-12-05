@@ -1,0 +1,106 @@
+/* ==========================================================================
+Type styles
+========================================================================== */
+
+/* ==========================================================================
+header styles
+========================================================================== */
+.main_header {
+	font-size: 3em; 
+	text-decoration: underline;
+	margin: 50px; 
+	text-align: center;
+}
+
+/* ==========================================================================
+navigation styles
+========================================================================== */
+
+/* ==========================================================================
+container styles
+========================================================================== */
+
+
+
+.auto-margin {
+	margin: 0 auto;
+}
+
+.inline-block {
+	display: inline-block;
+}
+
+.chalk-board {
+	width: 200px;
+	text-align: center;
+	font-family: cursive;
+	color: #FDFDFD;
+	letter-spacing: 2px;
+	border: 5px solid #CCA85E;
+	border-radius: 5%;
+	background-color: #086129;
+}
+
+
+
+/* ==========================================================================
+section styles
+========================================================================== */
+
+/* ==========================================================================
+form styles
+========================================================================== */
+
+.form-container {
+	margin: 50px auto;
+	width: 70%;
+}
+
+/* ==========================================================================
+list styles
+========================================================================== */
+
+#parents_options_container {
+	width: 53%;
+
+}
+
+#parents_options_list {
+	list-style-type: none;
+	margin: 50px 0 200px 0px;
+	padding: 0;
+}
+
+#parents_options_list li {
+	background-image: url('../images/x-6x.png'); 
+	background-repeat: no-repeat;
+	background-position: left;
+	font-size: 2.5em;
+	margin-bottom: 50px;
+	padding: 12px 0 12px 80px;
+}
+
+#parents_options_list li p {
+	width: 150px;
+	margin-left: 5px;
+	font-size: .8em;
+	text-align: right;
+}
+
+#parents_options_list a {
+
+}
+
+/* the plus sign */
+#parents_options_list .parent_action { 
+	float: right; 
+	margin: 13px 0 0 8px;
+} 
+
+#parents_options_list a:visited {color:#00FF00;}  /* visited link */
+#parents_options_list a:hover {color:#AAA;}  /* mouse over link */
+#parents_options_list a:active {color:#0000FF;}  /* selected link */
+
+/* ==========================================================================
+Helper classes
+========================================================================== */

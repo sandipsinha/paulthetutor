@@ -1,0 +1,1944 @@
+<?
+/*----------------------------------------------------------------------------------
+request_testsec($_REQUEST)
+show_test_sec($student_id, $section_id=NULL, $test_id=0, $section_num=0, $testhw="hw", $other=NULL)
+show_sec_results($testprep_id, $section_id=NULL, $test_id=0, $section_num=0, $testhw="hw", $other=NULL)
+get_question_id($problem_num,$section_id=NULL,$test_id=NULL,$section_num=NULL){
+get_section_id($question_id=NULL,$test_id=NULL,$section_num=NULL){
+put_q_form_row($question_id=NULL, $checkable=NULL, $answer=NULL, $problem_num=NULL, $student_id=NULL){
+put_section_form($section_id,$student_id=NULL,$section_num=NULL,$section_type=NULL, $header=NULL){
+put_test_form($test_id=NULL,$student_id=NULL,$header=1){
+get_question_info($question_id){
+get_questions_info($ar_qids=NULL,$str_qids=NULL,$section_id=NULL){
+get_sec_info($section_id){
+get_test_info($test_id){
+process_raw_score($raw_score, $section_type_id, $essay_score=NULL){
+raw_to_rep($raws, $section_type_id, $essay=NULL){
+rep_to_perc($rep_score, $section_type_id, $percentile_type=NULL){
+get_q_pts($question_id){
+get_q_pen returns the penalty for missing a problem		 
+get_q_pen($question_id){
+get_essay_score($test_id, $student_id) // NOT CREATED
+grade_act_q	- grades a questions as right or wrong		
+grade_test_q($ans, $cor, $question_id=NULL, $penalty = NULL, $reward = 1, $checkable = NULL, $section_id=NULL, $test_id=NULL, process_sections_questions									
+act_test_results										 
+process_answer($student_id, $question_id, $answer, $action1=NULL, $ca=NULL, $result=NULL, $raw_score=NULL, $checkable=NULL,		
+show_test_results($student_id, $test_id, $test_type_id = NULL){									 
+show_sat_results($student_id, $test_id){										 
+show_act_results($student_id, $test_id){
+store get_test_scores													 
+get_act_scores($student_id, $test_id){
+store get_test_scores													 
+get_sat_scores($student_id, $test_id){
+store ACT_Scores										 
+get_sec_scores($student_id, $section_id){										 
+act_sec_array(){												 
+grade_test_section($student_id, $section_id, $arAns, $other=NULL)
+rade_act_q												 
+grade_act_q($ans, $ca, $qid=NULL)							
+get_act_numbers(){												 
+select_testprep_student($varSelected=NULL,$varName = "student_id", $disName = "Test Prep Student", $testprep_id=NULL, 				
+just_select_act($varSelected=NULL, $varName = "test_id", $disName = "ACT Test", $test_id=NULL, $labelFirst = "Select 
+select_test												 
+just_select_test($varSelected=NULL, $varName = "test_id", $disName = "Test", $test_id=NULL, $labelFirst)
+select_test												 
+select_test_source												
+just_test_source($varSelected=NULL,$varName = "test_source_id", $disName = "Test Source", $labelFirst = "Test So
+select_test_source($varSelected=NULL,$varName = "test_source_id", $disName = "Test Source", $labelFirst = "Test get_test_type_info($test_id, $other=NULL){
+fix_TP_SAT_Questions(){
+fix_TP_HW_Answers(){
+getSATQResult($ans, $cor, $message, $spr){
+getSATval(){
+getSecRawScore($test_id, $sid, $section_type, $other){
+getReportedScore($raws, $type, $essay,$test_type=NULL,$test_id=NULL){
+get_test_type($disName='Select a Test', $varName='testid', $test_id=NULL, $strComment=NULL, $special=NULL, $labelFirst='select test', $cols=2){ 
+-----------------------------------------------------------------------------------*/
+
+/*----------------------------------------------------------------------------------
+req2testsec($request) - Function returns the section_id or test_id from the data sent in the request
+REQUEST{
+	test_id > test_id
+	section_id > section_id
+	section_num - along with test_id > section_id
+	questions > test_id or section_id
+	bb_page_num - passes a page number from the blue book and sets the section number
+	page_num[] num=>page number,  source => id number from TP_Test_Sources, return => "section" or "test"
+		returns the test or section that contains that page depending on 
+}
+
+globally set {
+	$test_id
+	$section_id
+	$sections // array of all of the sections[id] = sec_num
+}
+
+	
+-----------------------------------------------------------------------------------*/
+function req2testsec($ps){ 
+// printarray($ps);
+
+	global $section_id, $test_id, $sections;
+
+	if(!isEmpty($ps[bb_page_num])){
+		$pnqs = "select id from TP_Test_Sections where first_page <= $ps[bb_page_num] and last_page >= $ps[bb_page_num] and test_id >= 4 and test_id <= 14";
+			
+			$ps[section_id] = $section_id = singlequery($pnqs);
+// echo "1sec and test ids are $section_id, $test_id <BR>";
+			
+	}
+
+	if(!isEmpty($ps[ptts_page_num])) {
+	    $pttsqs = "SELECT section_number FROM TP_PTTS_ACT_BOOK WHERE first_page <= $ps[ptts_page_num] AND last_page >= $ps[ptts_page_num]";
+	    $ps[section_id] = $section_id = singlequery($pttsqs);
+	}
+
+	if(!isEmpty($ps[sections]))
+		$sections = $ps[sections];
+
+	if(!isEmpty($ps[test_id])){
+		$test_id = $ps[test_id];
+		global $test_info;
+		$test_info = get_test_info($test_id);
+		
+				
+		if(!isEmpty($ps[section_num]) ){
+			if(is_array($ps[section_num])){
+				foreach($ps[section_num] as $sec_num => $a){
+					$sec_id = get_section_id('',$ps[test_id], $sec_num);
+					$sections[$sec_id] = $sec_num;
+					
+				}
+ 
+ 			} else {
+				$section_id = get_section_id('',$ps[test_id], $ps[section_num]);
+				
+				global $section_info;
+				$section_info = get_section_info($section_id);
+				
+				if(isEmpty($sections)){
+					$sections = array($section_id => $ps[section_num]);
+				}
+			}
+		}
+			
+		
+
+		
+		if(isEmpty($sections)){
+			$secwhere = " where test_id = $test_id ";
+			$sections = MySQL_fillArray("id", "section_num", " TP_Test_Sections ", $secwhere, "id");
+		}
+		
+	}
+// echo "2sec and test ids are $section_id, $test_id <BR>";
+
+	if(!isEmpty($ps[section_id]) and !is_array($ps[section_id])){
+// echo "3sec and test ids are $section_id, $test_id <BR>";
+// printarray($ps[section_id]);
+
+		$section_id = $ps[section_id];
+		global $section_info;
+		$section_info = get_section_info($section_id);
+		
+		if(isEmpty($sections)){
+			$sections = array($section_id => $ps[section_num]);
+		}
+// echo "4sec and test ids are $section_id, $test_id <BR>";
+		
+	}
+	
+			
+
+	
+		
+	if(!isEmpty($ps[page_num]) and !(isEmpty($ps[test_source_id]))){ 
+		$test_source_id = $ps[test_source_id];
+		$pnqs = "select id from TP_Test_Sections where first_page <= $ps[bb_page_num] and last_page >= $ps[bb_page_num] and test_id in (select id from TP_Test_Info where test_source_id = $test_source_id)";
+
+		$ps[section_id] = $section_id = singlequery($pnqs);
+		
+	}
+	
+
+}
+/*----------------------------------------------------------------------------------
+show_test_sec($testprep_id, section_id=NULL, test_id, section_num, other=NULL){
+-----------------------------------------------------------------------------------*/
+function get_test_source($var_name='test_source_id', $test_source_id=NULL, $label="Select Test Source"){ 
+}
+
+/*----------------------------------------------------------------------------------
+show_test_sec($testprep_id, section_id=NULL, test_id, section_num, other=NULL){
+-----------------------------------------------------------------------------------*/
+function show_test_sec($student_id, $section_id, $link=NULL, $strTableName = "TP_Student_Answers", $testhw="hw", $other=NULL){ 
+
+// get section and test information	
+	$sec_info = get_section_info($section_id);
+	$sec_type = $sec_info[section_type_id];
+
+	$where = " where section_id = $section_id ";
+	$ar_qids = MySQL_fillArray('id', 'id', 'TP_Test_Questions',$where,'id');
+	$str_qids = implode(",",array_keys($ar_qids));
+
+// printarray($sec_info);
+// die();
+
+	$test_id = $sec_info[test_id];
+	$testname = $sec_info[test_name];
+	$test_type_id = $sec_info[test_type_id];
+
+// get the dates that the student entered their information
+	$dateQStr = "select distinct a.date from $strTableName a WHERE question_id in (select q.id from TP_Test_Questions q where q.section_id = $section_id) AND  a.student_id = $student_id and archived = 0 ORDER BY a.date ASC";
+$dateRS = runquery($dateQStr);
+	$dates = "(";
+	
+	while($dateAR = mysql_fetch_array($dateRS)){
+		$dates = "$dates $dateAR[date];  ";
+	}
+	$dates = "$dates )";	
+	
+	
+//make link based on what was graded and the folder
+	$redo_link = "testans_get.php?";
+	
+	if(!isEmpty($link[test_id])) // if grading a whole test, then be able to reenter for the whole test
+		$redo_link .= "test_id=$test_id";
+	
+	elseif(!isEmpty($link[section_id]))
+		$redo_link .= "section_id=$section_id";	
+		
+	$folder = getfolder('','','');
+	if($folder == 'ldsatadmin')
+		$redo_link .= "&student_id=$student_id";
+
+	$full_section_link = "https://www.paulthetutors.com/ldsatprep/ldsatadmin/test_ans_grader.php?
+	student_id=$student_id&section_id=$section_id";
+
+
+	?>
+
+	<table border="0" cellpadding="1" margin="0" align="left" cellspacing="0" bgcolor="#FFFFFF" class="table_1">   
+		 <tr>
+			<td colspan="2" class="show_sec_header"><span class=Head3><?=$testname?>, Sec <?=$sec_info[section_num]?>  <?=$sec_info[section_name];?>  (p. <?="$sec_info[first_page]"?> - <?=$sec_info[last_page];?>) 
+				<span class="center test_link">
+					<a class="test_link" href="<?=$full_section_link;?>" target="_blank">
+						Show Answers By Date
+					</a>
+				</span>
+				<span class="align_right"><a href="<?=$redo_link;?>">Re-Enter Answers</a></span>  </span><br /><?=$dates;?>  </td>
+		</tr>
+	
+		 <tr><td>
+			<table border="1" bordercolor="#000000" cellspacing="0" cellpadding="5" class="table_1">
+	<?
+			$resQStr = "select a.*, q.question_num as problem from $strTableName a, TP_Test_Questions q WHERE a.question_id in ($str_qids) AND (a.student_id = '$student_id') and q.id = a.question_id and a.archived = 0 ORDER BY problem ASC";
+	// echo "QS is $resQStr<BR>";
+			$res = runquery($resQStr);
+	$sec_score = singlequery(" select SUM(raw_points) from $strTableName WHERE question_id in ($str_qids) and student_id = $student_id and archived = 0 ");
+		while($row=mysql_fetch_array($res)){
+			$text_style = $row['result'];
+			$txt_pr.="<td class=\"styleNum\" align=\"center\">".$row[problem]."</td>";	
+			$tempres = $row[student_answer];
+			if(isEmpty($tempres)) $tempres = "-";
+			$txt_your_ans.="<td class=\"$text_style\" align=\"center\">" .  $tempres . "</td>";
+			$txt_corr_ans.="<td class=\"$text_style\" align=\"center\">";
+			if($text_style == "correct"){
+				$txt_corr_ans.='<img src="../../images/check_green.jpg" height="15" width="15">';
+			}
+			if($text_style == "wrong") {
+				$txt_corr_ans.='<img SRC="../../images/del_x.gif" border="0" height="13" width="13">';
+			}
+			if($text_style == "blank")
+				$txt_corr_ans.=" - ";
+			$txt_corr_ans.='</td>';
+	}
+	$round_sec = round($sec_score);
+	
+	
+	?>
+			<tr><td align="right"><span class="style1"><strong>Problem</strong></span></td><?=$txt_pr?></tr>
+			<tr><td align="right"><span class="style1"><strong>Your Answer</strong></span></td><?=$txt_your_ans?></tr>
+			<tr><td align="right"><span class="style1"><strong>Correct Answer</strong></span></td><?=$txt_corr_ans?></tr>
+			</table>
+	</td>
+	<td><sup><?=$round_sec;?></sup>&frasl;<sub><?=$sec_info[num_probs];?></sub> - 
+	<?
+	
+	$raw_score = round($sec_score/$sec_info[num_probs]*$sec_info[per_test]);
+
+	$rep_score = raw_to_rep($raw_score, $sec_type);
+	
+	
+	// echo "<sup>$raw_score</sup>&frasl;<sub>$tot_probs</sub> -";
+	echo " <strong>($rep_score)</strong>";
+	
+	
+	?>
+	
+	</td>
+	</tr></table>
+	
+	
+	<?
+	
+	return $return;
+}
+
+/*-----------------
+/*----------------------------------------------------------------------------------
+show_test_sec2($testprep_id, section_id=NULL, test_id, section_num, other=NULL){
+-----------------------------------------------------------------------------------*/
+function show_test_sec2($student_id, $section_id, $link=NULL, $strTableName = "TP_Student_Answers", $testhw="hw", $other=NULL){ 
+
+// get section and test information	
+	$sec_info = get_section_info($section_id);
+	$sec_type = $sec_info[section_type_id];
+
+	$where = " where section_id = $section_id ";
+	$ar_qids = MySQL_fillArray('id', 'id', 'TP_Test_Questions',$where,'id');
+	$str_qids = implode(",",array_keys($ar_qids));
+
+// printarray($sec_info);
+// die();
+
+	$test_id = $sec_info[test_id];
+	$testname = $sec_info[test_name];
+	$test_type_id = $sec_info[test_type_id];
+
+// get the dates that the student entered their information
+	$dateQStr = "select distinct a.date from $strTableName a WHERE question_id in (select q.id from TP_Test_Questions q where q.section_id = $section_id) AND  a.student_id = $student_id and archived = 0 ORDER BY a.date ASC";
+$dateRS = runquery($dateQStr);
+	$dates = "(";
+	$dates_array = [];
+
+	while($dateAR = mysql_fetch_array($dateRS)){
+		$dates = "$dates $dateAR[date];  ";
+		array_push( $dates_array, $dateAR["date"] );
+	}
+	$dates = "$dates )";	
+	
+	
+//make link based on what was graded and the folder
+	$redo_link = "testans_get.php?";
+	
+	if(!isEmpty($link[test_id])) // if grading a whole test, then be able to reenter for the whole test
+		$redo_link .= "test_id=$test_id";
+	
+	elseif(!isEmpty($link[section_id]))
+		$redo_link .= "section_id=$section_id";	
+		
+	$folder = getfolder('','','');
+	if($folder == 'ldsatadmin')
+		$redo_link .= "&student_id=$student_id";
+
+	$section_id = "id".hash( "md5", $testname.strval( $sec_info[section_num] )
+		.strval( $sec_info[section_name] ) );
+
+	?>
+
+	<table border="0" cellpadding="1" margin="0" align="left" cellspacing="0" bgcolor="#FFFFFF" 
+	class="table_1 test_table">   
+		 <tr>
+
+			<td colspan="2" class="show_sec_header"><span class=Head3><?=$testname?>, Sec <?=$sec_info[section_num]?>  <?=$sec_info[section_name];?>  (p. <?="$sec_info[first_page]"?> - <?=$sec_info[last_page];?>) <span class="align_right">
+				<a href="<?=$redo_link;?>">Re-Enter Answers</a></span>  </span><br /><?=$dates;?>  </td>
+
+<!-- 			<button class="show-button" data-tableid="<?= $section_id ?>">
+				Show all Section Tests
+			</button> -->
+
+		</tr>
+	
+		 <tr><td>
+
+			<table id="<?= $section_id ?>" border="1" bordercolor="#000000" cellspacing="0" cellpadding="5" 
+			class="table_1">
+
+	<?php 
+	$size_of_dates_array = sizeof( $dates_array );
+	//echo "Sizeof dates array ".$size_of_dates_array."<br/>";
+	$res = false;
+	$all_results = [];
+	$all_score = [];
+	$all_scores_and_questions = [];
+
+	for( $m=0; $m < $size_of_dates_array; $m++ ) {
+		//echo $dates_array[$m];
+
+		$resQStr = "select a.*, q.question_num as problem from $strTableName a, TP_Test_Questions q WHERE a.question_id in ($str_qids) AND (a.student_id = '$student_id') and q.id = a.question_id and a.date = '$dates_array[$m]' ORDER BY problem ASC";
+		//echo "QS is $resQStr<BR>";
+		$res = runquery($resQStr);
+		$sec_score = singlequery(" select SUM(raw_points) from $strTableName WHERE question_id in ($str_qids) and student_id = $student_id and archived = 0 and date = '$dates_array[$m]' " );
+		$score_and_question = runquery(" select raw_points, question_id from $strTableName WHERE question_id in ($str_qids) and student_id = $student_id and archived = 0 and date = '$dates_array[$m]' " );
+
+		array_push( $all_results, $res );
+		array_push( $all_score, $sec_score );
+		array_push( $all_scores_and_questions, $score_and_question );
+
+	}
+
+	//var_dump( $all_results );
+
+	/**
+	* temp class to hold test questions info
+	*/
+	class Question
+	{
+		public $points;
+		public $id;
+		function __construct( $points, $id )
+		{
+			$this->points = $points;
+			$this->id = $id;
+		}
+	}
+	$cumilative_score = 0;
+	$question_and_score = [];
+	$date_scores = [];
+	for( $n = 0; $n < sizeof( $all_scores_and_questions ); $n++ ) {
+
+		$score_and_question = $all_scores_and_questions[ $n ];
+
+		while( $row = mysql_fetch_array( $score_and_question ) ) {
+
+			if( Sizeof($question_and_score) > 0 && n > 0) {
+
+				for( $m = 0; $m < sizeof( $question_and_score ); $m++  ) {
+
+					$question = $question_and_score[ $m ];
+					if( $question->id == $row[ question_id ] ) {
+
+						$question->points = $row[ raw_points ];
+						$question_and_score[ $m ] = $question;
+
+					}
+
+				}
+
+			} else {
+
+				array_push( $question_and_score, new Question( $row[raw_points], $row[question_id] ) );
+
+			}
+
+			$cumul_score += $question_and_score[ Sizeof( $question_and_score ) - 1 ]->points;
+
+		}
+
+		array_push( $date_scores, $cumul_score );
+
+	}
+
+	$score_total = 0;
+	for( $m = 0; $m < Sizeof( $question_and_score ); $m++ ) {
+
+		$score_total += $question_and_score[ $m ]->points;
+
+	}
+
+	$score_total = round( $score_total );
+
+	for( $i = 0; $i < sizeof( $all_results ); $i++ ) {
+
+		//var_dump( $all_results[$i] );
+		$round_sec = round($date_scores[$i]);
+		$score = "<sup>".$round_sec."</sup>&frasl;<sub>".$sec_info['num_probs']."</sub";
+		$raw_score = round($date_scores[$i]/$sec_info['num_probs']*$sec_info['per_test']);
+
+		$rep_score = raw_to_rep($raw_score, $sec_type);
+		$score .= " <strong>($rep_score)</strong>";
+
+		printTestResult( $all_results[$i], $sec_info[num_probs], $dates_array[$i], $score, $i != 0, $i == 0 );
+
+	}
+	
+	//endfor} ?>
+
+			<label>Total Score: <?= $score_total ?></label>
+
+			</table>
+		</td>
+		</tr>
+	</table>
+	
+	
+	<?
+	
+	return $return;
+}
+
+/*
+printTestResult (
+$result sql query result
+$max_size number of rows of the largest test result 
+$date_taken the date the answers were given
+$score the test score for this date )
+*/
+function printTestResult( $result, $max_size, $date_taken, $score,
+	$fold=false, $print_problem_numbers=false ) {
+
+	$result_size = mysql_num_rows( $result );
+	//echo "date_taken: $date_taken result size: $result_size max_size: $max_size HELLO WORLD!";
+
+	$result_array = [];
+	while( $row = mysql_fetch_array( $result ) ) {
+		array_push( $result_array, $row );
+	}
+
+	//echo "array size " . sizeof( $result_array ); 
+	
+	//$test_row_id = "id".hash( "md5", strval( $result_array[0]["date"] ).strval( $result_size ) );
+
+	$answers = 0;
+	$q_num = 0;
+	$prev_q_num = 0;
+	for( $n=0; $n < $max_size; $n++ ) {
+
+		if( $n < $result_size ) {
+
+			$row = $result_array[$n];
+			$text_style = $row['result'];	
+			$tempres = $row['student_answer'];
+
+			$qry = "SELECT * FROM TP_Test_Questions WHERE id = $row[question_id] LIMIT 0, 1";
+			$res = runquery( $qry );
+
+			while( $q_row = mysql_fetch_array( $res ) )	$q_num = $q_row[question_num];
+
+			if( isEmpty($tempres) ) $tempres = "-";
+		
+		} else {
+
+			$tempres = "-";
+			$q_num = $q_num+1;
+		}
+
+		if( $tempres == "-" ) $text_style = "";
+
+		if( $q_num != 0 && !isEmpty( $q_num ) ) {
+
+			if( ($q_num - $prev_q_num)  > 1 ) {
+
+				//echo $q_num . " question number, $prev_q_num previous question";
+				for( $u = 0; $u < (($q_num-1)-$prev_q_num); $u++ ) {
+				    $txt_pr.="<td class=\"styleNum cell\" align=\"center\">" . ( $prev_q_num + 1 ) . "</td>";
+					$txt_your_ans.="<td class=\"cell\" align=\"center\"> - </td>";
+					$answers++;
+				}
+
+			}
+
+		}
+
+	    $txt_pr.="<td class=\"styleNum cell\" align=\"center\">" . $q_num . "</td>";
+		$txt_your_ans.="<td class=\"$text_style cell\" align=\"center\">" .  $tempres . "</td>";
+
+		if( ($n+1) == $max_size || ($answers+1) == $max_size ) {
+			//$answers = 0;
+			$date = new DateTime( $date_taken );
+			$txt_pr .= "<td class=\"styleNum cell\" align=\"center\"> Score </td>";
+			$txt_your_ans .= "<td class='cell' align='center'>" . $score . "</td>";
+
+			if( $print_problem_numbers ) {
+			?>
+			
+				<tr><td align="right" widht="70px"><span class="style1">
+						<strong>Problem</strong></span></td> <?= $txt_pr ?> </tr>
+			
+			<? } ?>
+
+			<tr id="" class="">
+
+				<td align="right" widht="70px">
+
+				<span class="style1"><strong><?= $date->format( "m-d-y H:i:s" ) ?></strong></span>
+				
+				</td>
+
+				<?= $txt_your_ans ?>
+
+			</tr>
+
+			<?php
+
+			$txt_pr = "";
+			$txt_your_ans = "";
+			break;
+		}
+
+		$answers++;
+		$prev_q_num = $q_num;
+
+	}
+?>
+
+
+<?php
+}
+
+/*----------------------------------------------------------------------------------
+show_sec_results($testprep_id, section_id=NULL, test_id, section_num, other=NULL){
+-----------------------------------------------------------------------------------*/
+function show_sec_results($testprep_id, $section_id=NULL, $test_id=0, $section_num=0, $testhw="hw", $other=NULL){ 
+
+// echo "sec res called<BR>";
+	$strTableName = "TP_HW_Answers";
+	
+	if(isEmpty($other[student_id])){
+		$student_id = singlequery("select student_id from PT_TestPrep_Reg where id = $testprep_id");
+	} else {
+		$student_id = $other[student_id];
+	}
+	
+	
+	If(!(isEmpty($section_id))){
+		$section_num = singlequery("select section_number from TP_SAT_Sections where id = $section_id");
+		$test_id = singlequery("select test_id from TP_SAT_Sections where id = $section_id");
+	}	
+	if(isEmpty($section_id))
+	$section_id = singlequery("select id from TP_SAT_Sections where test_id = $test_id and section_number = $section_num");
+	
+// echo "section id is $section_id <BR>";
+// echo "test prep id is $testprep_id<BR>";	
+
+$testname = singlequery("select name from TP_SAT_Tests where id = $test_id");
+$test_type = singlequery("select test_type from TP_SAT_Tests where id = $test_id");
+
+$dateQStr = "select distinct date from $strTableName WHERE section_num=$section_num AND test_id=$test_id AND  student_id = $student_id ORDER BY date ASC";
+
+$sec_type = singlequery("select section_type from TP_SAT_Sections where test_id=$test_id and section_number = $section_num");
+$show_type = ucfirst($sec_type);
+
+$dateRS = runquery($dateQStr);
+$dates = "(";
+while($dateAR = mysql_fetch_array($dateRS)){
+	$dates = "$dates $dateAR[date] ";
+}
+$dates = "$dates )";	
+
+
+//make link adjustable based on test type
+
+if($test_type == 1)
+	$redo_link = "hwgrader03.php?testprep_id=$testprep_id" . "&section_id=$section_id";
+	
+if($test_type == 3)
+	$redo_link = "act_grader.php?student_id=$student_id&section_id=$section_id";	
+
+
+?>
+<table border="5" cellpadding="1" margin="0" align="left" cellspacing="0" bgcolor="#FFFFFF" class="table_1">   
+	 <tr>
+		<td colspan="2"><span class=Head3>Scores for <?=$testname?>, Sec <?=$section_num?>  <?=$show_type;?>  <?=$dates;?>  <a href="<?=$redo_link;?>">Re-Enter Answers</a>  </span></td>
+	</tr>
+
+	 <tr><td>
+	 	<table border="1" bordercolor="#000000" cellspacing="0" cellpadding="5" class="table_1">
+<?
+		$resQStr = "select * from $strTableName WHERE ((section_num=$section_num AND test_id=$test_id) or section_id = $section_id) AND (testprep_id='$testprep_id' or student_id = '$student_id') ORDER BY problem ASC";
+// echo "QS is $resQStr<BR>";
+		$res = runquery($resQStr);
+$sec_score = singlequery("select SUM(raw_points) from $strTableName WHERE ((section_num=$section_num AND test_id=$test_id) or section_id = $section_id) and student_id = $student_id");
+    while($row=mysql_fetch_array($res)){
+		$sec_total = $row[problem];
+		$text_style = $row['result'];
+		$txt_pr.="<td class=\"styleNum\" align=\"center\">".$row[problem]."</td>";	
+		$tempres = $row[answer];
+		if(isEmpty($tempres)) $tempres = "-";
+		$txt_your_ans.="<td class=\"$text_style\" align=\"center\">" .  $tempres . "</td>";
+		$txt_corr_ans.="<td class=\"$text_style\" align=\"center\">";
+		if($text_style == "correct"){
+			$txt_corr_ans.='<img src="../../images/check_green.jpg" height="15" width="15">';
+		}
+		if($text_style == "wrong") {
+			$txt_corr_ans.='<img SRC="../../images/del_x.gif" border="0" height="13" width="13">';
+		}
+		if($text_style == "blank")
+			$txt_corr_ans.=" - ";
+		$txt_corr_ans.='</td>';
+}
+$round_sec = round($sec_score);
+
+
+?>
+		<tr><td align="right"><span class="style1"><strong>Problem</strong></span></td><?=$txt_pr?></tr>
+		<tr><td align="right"><span class="style1"><strong>Your Answer</strong></span></td><?=$txt_your_ans?></tr>
+		<tr><td align="right"><span class="style1"><strong>Correct Answer</strong></span></td><?=$txt_corr_ans?></tr>
+		</table>
+</td>
+<td><sup><?=$round_sec;?></sup>&frasl;<sub><?=$sec_total;?></sub> - 
+<?
+if($test_type == 1)
+	$tot_probs = singlequery("select max(raw_score) from TP_SAT_Score_Converter where type = '$sec_type'");
+
+if($test_type == 3)
+	$tot_probs = singlequery("select per_test from TP_Section_Type where id = ($section_num + 3)");
+
+$raw_score = round($sec_score/$sec_total*$tot_probs);
+if($test_type == 1)
+	$rep_score = (int)getReportedScore_New($raw_score, $sec_type,0,$test_id,1);
+
+// echo "(int)getReporteore_New($raw_score, $sec_type,0,$test_id,1);"	;
+
+if($test_type == 3){
+	$sect_type_id = $section_num + 3;
+	$rep_score = (int)getReportedScore($raw_score,$sect_type_id ,0,3);
+}
+
+// echo "<sup>$raw_score</sup>&frasl;<sub>$tot_probs</sub> -";
+echo " <strong>($rep_score)</strong>";
+
+
+?>
+
+</td>
+</tr></table>
+
+
+<?
+}   //show_sec_results
+
+/*-------------------------------------------------------------------*/
+/*   	get_question_id - puts headers from an array     	 
+/* 					  	 											 
+/*-------------------------------------------------------------------*/
+function get_question_id($problem_num,$section_id=NULL,$test_id=NULL,$section_num=NULL){
+	$question_id = $where = NULL;
+	
+	if(is_null($section_id)){ //if the section_id is not given, get it
+		$sqs = "select id from TP_Test_Sections where section_num = $section_num and test_id = $test_id";
+		$section_id = singlequery($sqs);
+	}
+	
+	$qidqs = "select id from TP_Test_Questions where question_num = $problem_num section_id = $section_id ";
+	$question_id = singlequery($qidqs);
+	
+	return $question_id;
+}
+/*-------------------------------------------------------------------*/
+/*   	get_q_answer - puts headers from an array     	 
+/* 					  	 											 
+/*-------------------------------------------------------------------*/
+function get_section_id($question_id=NULL,$test_id=NULL,$section_num=NULL){
+	$section_id = NULL;
+	
+	if(!is_null($test_id) and !is_null($section_num)){
+		$section_id = singlequery("select id from TP_Test_Sections where test_id = $test_id and section_num = $section_num");
+		return $section_id;
+	}
+	
+	if(!is_null($question_id)){
+		$sqs = "select section_id from TP_SAT_Questions where id = $question_id";
+		$section_id = singlequery($sqs);
+		return $section_id;
+	}
+
+		
+}
+
+/*-------------------------------------------------------------------*/
+/*   	get_q_answer - puts headers from an array     	 
+/* 					  	 											 
+/*-------------------------------------------------------------------*/
+function put_q_form_row($question_id=NULL, $spr=NULL, $answer=NULL, $problem_num=NULL, $student_id=NULL){
+	
+// if the answer is not passed but the student_id is passed, get the answer
+	if(is_null($answer) and !(is_null($student_id))) {
+
+
+		$aqs = "select answer from TP_Test_Answers where student_id = $student_id and question_id = $question_id and archived = 0";
+		$answer = singlequery($aqs);
+	}
+
+	if(is_null($spr) or is_null($question_id)){
+// echo "in Get SPR <BR>";
+		$arqinfo = 	get_question_info($question_id);
+		$spr = $arqinfo['spr'];
+		$number = $arqinfo['number'];
+	} 
+?>	
+		<tr> <td nowrap="nowrap" align=center><div class="test_form_q"><b> <?=$problem_num;?>. </b>
+<?        
+
+	if($spr == 0){  
+    		echo "<input name=\"answers[$question_id]\" type=\"text\" size=\"1\" maxlength=\"1\" value=\"$answer\">";
+	} else { 
+    		echo "<input name=\"answers[$question_id]\" type=\"text\" size=\"6\" maxlength=\"20\" value=\"$answer\">";
+    	echo '</div></td>
+    		</tr>';	
+	}
+	
+	return ;
+}
+
+/*-------------------------------------------------------------------*/
+/*   	get_q_answer - puts headers from an array     	 
+/* 					  	 											 
+/*-------------------------------------------------------------------*/
+function put_section_form($section_id,$student_id=NULL,$section_num=NULL,$section_type=NULL, $header=NULL){
+	
+if(is_null($section_num) or is_null($section_type))
+	list($section_num,$section_type) = rowquery("select section_num,(select t.name from TP_Section_Type t where t.id = s.section_type_id) as section_type from TP_Test_Sections s where s.id = $section_id");
+	
+putHiddenField("sections[$section_id]",$section_num);		
+	
+?>
+<table cellpadding="0" cellspacing="0" border="1" align="center" class="section_form_table"><tr><th nowrap="nowrap" class="nowrap"  colspan="2">Section <?=$section_num;?><br><?=$section_type;?></th></tr>
+
+<?
+	$answer_field = NULL;
+	
+// if a the student_id is passed, get his answers to that problem	
+	if(!is_null($student_id))
+		$answer_field = " , (select a.student_answer from TP_Student_Answers a where a.question_id = q.id and a.student_id = $student_id and archived = 0 order by a.date DESC limit 1) as answer ";
+
+// get get the information about every question in the seciton and maybe the student's answers 
+	$qsqs = "select q.id as question_id, q.question_num, q.spr $answer_field from TP_Test_Questions q where section_id = $section_id order by q.question_num";
+
+// echo "qst is $qsqs <BR>";	
+	$qsRS = runquery($qsqs);
+	
+	while($row = mysql_fetch_assoc($qsRS)){
+
+// echo "ans $row[answer] & ". $row['answer'] . "<br>" ;		
+		 put_q_form_row($row['question_id'],$row['spr'],$row['answer'],$row['question_num']);
+				
+	}
+echo "</table>";	
+}
+
+/*-------------------------------------------------------------------*/
+/*   	get_q_answer - puts headers from an array     	 
+/* 					  	 											 
+/*-------------------------------------------------------------------*/
+function put_test_form($test_id=NULL,$student_id=NULL,$header=1){
+	$secqs = "select id, section_num from TP_Test_Sections where test_id = $test_id order by section_num";
+	$secRS = runquery($secqs);
+	$test = get_test_info($test_id);
+	
+// echo "student id isss $student_id <BR>";	
+	
+	putHiddenField(test_id,$test_id);
+	putHiddenField(student_id,$student_id);
+	
+?>
+<table cellpadding="0" cellspacing="0" class="test_form_table"><tr>
+<?
+	if($header){
+		echo "<th colspan=\"$test[num_sections]\" class=\"test_form_th\"> $test[name] </th></tr><tr>";
+ 	} 	
+	
+	while($sec = mysql_fetch_assoc($secRS)){
+		echo "<td valign=\"top\">";
+		put_section_form($sec[id],$student_id,$sec[section_num]);
+		echo "</td>";
+	}
+	echo "<td> <input type=\"submit\" /></td></tr>";
+}
+
+
+/**************************************************
+ get_question_info($question_id)
+  
+ inputs: $question_id 
+ outputs: question_num, $correct_answer, $reward, $punishment, $section_id, $checkable
+ ***************************************************/
+
+ function get_question_info($question_id){
+	 
+	 $qqs = "select *, answer as correct_answer from TP_Test_Questions where id = $question_id";
+	 $qinfo = rowquery($qqs);
+	 
+	 $qsinfo[reward] = get_q_pts($row[id]);
+	 $qsinfo[penalty] = get_q_pen($row[id]);
+
+	 
+	 return $qinfo;
+ 
+ }
+/**************************************************
+get_questions_info($ar_qids,$str_qids){  
+it is assumed that the qid is the key for each element of the array
+$ar_qid[$qid] = ???
+ ***************************************************/
+
+ function get_questions_info($ar_qids=NULL,$str_qids=NULL,$section_id=NULL){
+	 
+	 if(is_null($str_qids) and !is_null($ar_qids))
+	 	$str_qids = implode(",",array_keys($ar_qids));
+	 
+	 if(!is_null($str_qids))
+	 	$where = " where id in ($str_qids) ";
+		
+	if(!is_null($section_id))
+		$where = " where id in (select id from TP_Test_Questions where section_id = $section_id) ";	
+		
+	$qqs = "select *, answer as correct_answer from TP_Test_Questions $where ";
+	
+	$qrs = runquery($qqs);
+	while($row = mysql_fetch_assoc($qrs)){
+		$qsinfo[$row[id]] = $row;
+		$qsinfo[$row[id]][reward] = get_q_pts($row[id]);
+		$qsinfo[$row[id]][penalty] = get_q_pen($row[id]);
+		
+	}
+	
+// var_dump($qsinfo);	 
+	 return $qsinfo;
+ 
+ }
+/**************************************************
+ get_section_info($section_id) and get_sec_info()
+  
+ inputs: section_id
+ output:  test_id, section_num, first_page, last_page, time, section_type_id, section_type_name, test_type_id, test_type_abbrev
+ 
+ ***************************************************/
+ function get_section_info($section_id){ // both names work
+	$return = get_sec_info($section_id);
+	return $return;
+ }
+/***************************************************/
+
+ function get_sec_info($section_id){
+	
+	//echo "section id $section_id";
+
+	$qry = "select * from TP_Test_Sections where id = $section_id";
+	$secinfo = rowquery( $qry );
+	$secinfo[num_probs] = singlequery("select max(question_num) from TP_Test_Questions where section_id = $section_id");
+
+	//printarray($secinfo);
+
+	$sec_type_id = $secinfo['section_type_id'];
+
+	//echo "sec type id: $sec_type_id";
+
+	$sectypeinfo = rowquery("select name as section_name, name, test_type_id, per_test from TP_Section_Type where id = $sec_type_id");
+
+	$test_type_id = $sectypeinfo[test_type_id] ;
+
+	//echo "test type: $test_type_id";
+	
+//= singlequery("select test_type_id from TP_Test_Info where id = $secinfo[test_id]");
+	
+	$secinfo[test_type_abbrev] = singlequery("select abbreviation from TP_Type_Tests where id = $test_type_id");  
+
+	$testtypeinfo = get_test_type_info($test_type_id);
+	$testtypeinfo[test_type_name] = $testtypeinfo[name];
+	$testtypeinfo[test_abbrev] = $testtypeinfo[abbreviation];
+	
+	$test_info = get_test_info($secinfo[test_id]);
+	$test_info[test_name] = $test_info[name];
+	$sec_info = array_merge($testtypeinfo, $test_info, $sectypeinfo, $secinfo);
+	 
+	return $sec_info;
+ }
+ 
+ /**************************************************
+ get_test_info($section_id)
+ input: test_id
+ outputs: name, name_short, test_type_id, source, description, first_page, last_page, pick_order, archived, test_type_name. test_type_abbrev num_sections, num_questions, last_section
+ ***************************************************/
+
+ function get_test_info($test_id){
+	$testinfo = rowquery("select * from TP_Test_Info where id = $test_id");
+	$test_type_id = $testinfo[test_type_id];
+	
+	$testtypeinfo = rowquery("select name as test_type_name, abbreviation as test_type_abbrev from TP_Type_Tests where id = $test_type_id");
+	$secinfo = rowquery("select count(*) as num_secitons, max(section_num) as last_sec from TP_Test_Sections where test_id = $test_id");
+	
+	$testinfo['num_problems'] = singlequery("select count(*) from TP_Test_Questions where section_id in (select id from TP_Test_Sections where test_id = $test_id)");
+	$test_info = array_merge($testinfo, $secinfo, $testtypeinfo);
+
+	return $test_info;
+}
+  
+/**************************************************
+ get reported score 
+ inputs: raw score, section type, essay score 
+ (essay score is given regardless and is always 0 for math and reading sections)
+ ***************************************************/
+
+ function process_raw_score($raw_score, $section_type_id, $essay_score=NULL){
+	 $return['rep_score'] = $rep_score = raw_to_rep($raw_score, $section_type_id,$essay_score);
+	 $return['perc'] = $perc = rep_to_perc($rep_score, $section_type_id);
+	 
+	 return $return;
+ }
+
+/**************************************************
+ get reported score 
+ inputs: raw score, section type, essay score 
+ (essay score is given regardless and is always 0 for math and reading sections)
+ ***************************************************/
+
+ function raw_to_rep($raws, $section_type_id, $essay=NULL){
+	if (is_null($essay) and $section_type_id == 3){
+		$essay = intval(($raws-3)/8)+1;
+		if($essay == 7) $essay = 6;
+//	echo "$raws is raw and essay is $essay <BR>";	
+	}
+// echo "$raws is ";	
+	$raws = round($raws);
+
+// echo "$raws then is <BR>";	
+	if($section_type_id == 3){
+		$sq = "select reported_score from TP_Score_Converter where section_type_id = $section_type_id and raw_score = $raws and essay_score = '$essay'";
+	} else {
+		$sq = "select reported_score from TP_Score_Converter where section_type_id = $section_type_id and raw_score = $raws";
+// echo $sq;
+	}
+// echo "rep is $sq<BR>";
+
+	$repsc = singlequery($sq);
+	return $repsc;
+}		
+
+
+/***************************************************/
+// ReptoPerc($rep_score, $section_type_id)
+// Gets the percentile based on the reported score
+//
+//**************************************************/
+
+ function rep_to_perc($rep_score, $section_type_id, $percentile_type=NULL){
+		if(is_null($percentile_type) and !is_null($section_type_id))
+			$percentile_type = singlequery("select id from TP_Percentile_Types where section_type_id = $section_type_id");
+		$sq = "select percentile from TP_Percentile_Converter where percentile_type = $percentile_type and reported_score = $rep_score";
+		
+// echo "perc qs is $sq </br>";		
+		
+		$perc = singlequery($sq);
+		return $perc;
+		
+}		
+/*-----------------------------------------------------------------------*/
+/* returns the points a student gets for answering a question correctly	 */
+/*-----------------------------------------------------------------------*/
+function get_q_pts($question_id){
+	return 1;
+}
+/*-------------------------------------------------------------------*/
+/* function	get_q_pen returns the penalty for missing a problem		 */
+/*-------------------------------------------------------------------*/
+function get_q_pen($question_id){
+	$pen = 0;
+	$qinfo = rowquery("select (select t.test_type_id from TP_Test_Info t where t.id = q.test_id) as test_type_id, q.spr from TP_Test_Questions q where id = $question_id");
+	if(($qinfo[test_type_id] == 1) and ($spr == 0))
+		$pen = -1/4;
+		
+	return $pen;
+	
+}
+/*-------------------------------------------------------------------*/
+/* function	grade_act_q	- grades a questions as right or wrong		
+/* required - $ans
+/* works if correct answer is passed, or just q_id
+/* if $checkable is passed, used, otherwise found in TP_Test_Questions
+/*
+/* 	return: array with result and raw score							 */
+/*-------------------------------------------------------------------*/
+function grade_test_q($ans, $cor, $question_id=NULL, $penalty = NULL, $reward = 1, $checkable = NULL, $section_id=NULL, $test_id=NULL, $section_num=NULL, $problem_num=NULL){
+
+		$res[raw_score] = 0;
+
+		if(isEmpty($ans)) { // if no answer is given, then the question is blank and 0 points are given
+			$res[res] = "blank";
+		
+		} else { // if it's not blank we have to process it.
+
+// if the $question_id is not passed, and is needed get the question_id from the section number and problem number		
+			if(isEmpty($question_id) and (((!is_null($section_id) or (!isEmpty($test_id) and !isEmpty($section_num))) and !isEmpty($problem_num)) and (isEmpty($reward) or isEmpty($penalty) or isEmpty($checkable) or isEmpty($cor))))
+				$question_id = get_question_id($problem_num,$section_id,$test_id,$section_num);
+		
+//get the reward and penalty based on q_id
+			if(isEmpty($checkable) or isEmpty($cor) or isEmpty($question_id) or is_null($penalty)){
+				
+				if(!(isEmpty($question_id))){
+					$qinfo = get_question_info($question_id);
+					if(isEmpty($checkable)) $checkable = $qinfo['checkable'];
+					if(isEmpty($cor)) $cor = $qinfo['answer'];
+					if(isEmpty($reward)) $reward = $qinfo['reward'];
+					if(isEmpty($penalty)) $penalty = $qinfo['penalty'];
+				}
+				
+			} else {
+				
+				if(isEmpty($reward))
+					$reward = 1;
+				if(isEmpty($penalty))
+					$penalty = 0;
+				if(isEmpty($checkable))
+					$checkable = 'yes';
+			}
+
+			switch($checkable) {
+				case "essay": //if it's an essay, there is no grading
+					$res['raw_score'] = $ans;
+					$res['res'] = "correct";
+				
+				break;
+				
+				case "range": //if a range of answers work it is also a SPR
+	
+					$res['raw_score'] = 0; //assume that it is incorrect
+					$res['res'] = "wrong";
+	
+					eval('$ans='.$ans.';');
+					$cor = str_replace(" ","",$cor);
+					$arr_cor =  preg_split("/<=|<|>=|>/", $cor);
+					preg_match_all("/<=|<|>=|>/", $cor,$arr_sings);
+					$sign_left = $arr_sings[0][0]; $sign_right = $arr_sings[0][1];
+					eval('if ($arr_cor[0]'.$sign_left.'$ans && $ans'.$sign_right.'$arr_cor[2]) {$res[raw_score]=$reward; $res[res]="correct";}');
+				
+				break;
+			
+	// need to determine if checkable and if not grade accordingly. Should be able to get code from SAT grading function	
+				case "multi": //if multiple answers are possible it is also a SPR
+
+					$res['raw_score'] = 0; //assume that it is incorrect
+					$res['res'] = "wrong";
+					$strcor = str_replace(",", "or", $cor);
+					$arCA = explode('or', $strcor);
+	
+					while(list($key, $val) = each($arCA)){
+						$val = trim($val);
+						if((float)$ans == (float)$val){
+							$res['raw_score'] = $reward;
+							$res['res'] = "correct";
+						}	
+					}
+				break;
+	
+				default:
+				
+					if(strcasecmp($ans,$cor) <> 0){ // if they are different
+						$res[res] = "wrong";
+						$res[raw_score] = $penalty;
+					} else {
+						$res[res] = "correct";
+						$res[raw_score] = $reward;
+					}
+				break;
+			}
+			
+			
+		} // else which indicates the problem is not blank
+		
+		$res[points] = $res[raw_score];
+		return $res;
+
+}
+
+/*-------------------------------------------------------------------*/
+/* function	process_sections_questions									*/
+/* will process multiple questions. Can accept an array of answers 
+	$arIDAns[id] = $student_answer
+	$qar = has information about each question. usually blank.
+								 
+/* inserts or updates the values for each questions						*/
+/*-------------------------------------------------------------------*/
+function process_answers($student_id, $arIDAns, $qar= NULL, $action = "single_insert", $strTableName = "TP_Student_Answers"){
+
+// if the results were not passed, get the correct answers and the type of problem for all problems	
+// could just pass the qid and answer, but better to get the answers now
+
+	if( (is_null($qar[ca]) or is_null($qar[checkable])) and (is_null($qar[result]) or is_null($qar[raw_score]))){
+		$qsar = get_questions_info($arIDAns);
+	}
+	
+	reset($arIDAns);
+	$instr = "";
+	if($action == "single_insert") 
+		$single_action = "return";
+	else 
+		$single_action = $action;
+
+// get the students old answers to these quesitions, if they exist
+	$str_qids = implode(",",array_keys($arIDAns));
+	reset($arIDAns);
+	$paqs = "select question_id, student_answer, result from $strTableName where question_id in ($str_qids) and student_id = $student_id and archived = 0 order by question_id";
+
+// echo "$paqs <BR>";	
+	$pars = runquery($paqs);
+	while($row = mysql_fetch_assoc($pars)){
+		$prev_ans[$row[question_id]] = $row['student_answer'];
+		$prev_id[$row[question_id]] = $row[question_id];
+	}
+	
+	$instr = "";
+	foreach($arIDAns as $question_id => $answer){
+		if($prev_ans[$question_id] <> $answer or (!isset($prev_id[$question_id]))){
+
+			$qar = $qsar[$question_id];
+
+// printarray($qar);
+
+			$instr .= process_answer($student_id, $question_id, $answer, $single_action, $qar[correct_answer], $qar[result], $qar[raw_score], $qar[checkable], $qar[penalty], $qar[reward], $prev_ans[question_id], $qar[test_id], $qar[test_id_type]);
+		}
+	}
+// echo "instr is $instr <BR><BR>";
+
+// should the data be inserted, or the string passed back?	
+	if($action == "single_insert" and !isEmpty($instr)){ 
+		$instr = rtrim($instr, ", ");
+		$inqs = "insert into $strTableName (student_id, question_id, student_answer, result, raw_points, date) VALUES $instr ";
+		
+//  echo "insert new questions with is $inqs<BR><BR>";		
+		
+		$insert_res = runquery($inqs);
+		
+	}
+	
+	if($action == "return") 
+		$return = $instr;
+
+// return if anythig is to be returned		
+	return $return;		
+	
+}
+/*-------------------------------------------------------------------*/
+/* function	process_answer										 
+	takes an answer for a question and grades it. If it is different than the value that is in the database, it will be inserted. If not, it will be inserted, or a string with the informaiton will be returned.
+	return - if this is the first time questions for this section are inserted, a string will be passed back
+	insert - if this is a redo on the section, the question is directly updated.
+/* $action = (insert, update, return)								 */
+/* $student_id and question_id are $required = (insert, update, return)								 */
+/*-------------------------------------------------------------------*/
+function process_answer($student_id, $question_id, $answer, $action="return", $ca=NULL, $result=NULL, $raw_score=NULL, $checkable=NULL, $penalty=NULL, $reward=NULL, $prev_id=NULL, $test_id=NULL, $test_id_type=NULL, $strTableName = "TP_Student_Answers" ){
+	
+
+	if(isEmpty($result) or isEmpty($raw_score)){
+		$reAr = grade_test_q($answer, $ca,$qinfo[id],$penalty, $reward, $checkable);
+//grade_test_q($ans, $ca,$question_id=NULL, $penalty = NULL, $reward = NULL, $checkable = NULL)	
+
+		$result = $reAr[res];
+		$raw_score = $reAr[raw_score];
+	}
+
+// if the q_id and s_id were not passed, we can only tell if it's correct or not and pass it back.	
+	if(!is_null($question_id) and !is_null($student_id)){
+		if(is_null($prev_id)){
+
+			// if the action is not passed determine if we have to update or insert the information.
+			$redostr = "select id from $strTableName where student_id = $student_id and question_id = $question_id and archived = 0";
+			$prev_id = singlequery($redostr);
+			
+		}
+	
+		if(!isEmpty($prev_id)){ // archive the old values
+		
+			$uqs = "update TP_Student_Answers set archived = 1 where id = $prev_id";
+			
+// echo "archive old answer with $uqs <BR>";			
+			
+			$u_res = runquery($uqs);
+		}
+			
+		
+// echo "action is $action <BR>";	
+
+
+//if the results and the number of points aren't passed, check the answer.	
+		$str_vals = "($student_id, $question_id, '$answer', '$result', '$raw_score', NOW()), ";
+		
+		switch($action){
+			case "insert":
+				$iqs = "insert into $strTableName (student_id, question_id, student_answer, result, raw_points, date) values $str_vals)";
+				
+// echo "the insert single answer with $iqs<BR>";			
+
+				$return = runquery($iqs);	
+				break;
+			
+			case "return":		// will be the values for TP_Student_Answers
+			//fields student_id, question_id, answer, result, raw_points, date
+				$return = $str_vals;
+				break;
+		} // switch 
+		
+	} else { // if the question_id and student_id were not passed, only job is to grade it, not insert it.
+		$return = $reAr; // returns the result, raw_points 
+			
+	}
+	
+	return $return;
+			
+}
+/*-------------------------------------------------------------------*/
+/* function insert_answer	
+NOT USED FOR NOW
+				*/
+/*-------------------------------------------------------------------*/
+function insert_answer($student_id, $question_id, $action = "return"){
+
+
+
+}
+
+/*-------------------------------------------------------------------*/
+/* function	act_test_results										 */
+/*-------------------------------------------------------------------*/
+function show_test_results($student_id, $test_id, $test_type_id = NULL){
+	if(isEmpty($test_type_id))
+		$test_info = get_test_info($test_id);
+		
+// printarray($test_info);		
+		
+	switch($test_info[test_type_id]){
+		case 1:
+			show_sat_results($student_id, $test_id);
+			break;
+			
+		case 3:
+			show_act_results($student_id, $test_id);
+			break;
+	}
+	
+	
+}
+/*-------------------------------------------------------------------*/
+/* function	act_test_results										 */
+/*-------------------------------------------------------------------*/
+function show_sat_results($student_id, $test_id){
+	$scores = get_sat_scores($student_id, $test_id);
+	
+	// printarray($scores);
+?>
+	
+	<table border="3"><tr><th>&nbsp;</th><th>Math</th><th>Critical Reading</th><th>Writing</th><th>Essay</th><th>1600</th><th>2400</th></tr>
+	<tr><td style="font-weight:bold">Raw Score</td>
+	<?	
+		echo "<td>" .  $scores[1]['raw'] ."</td>";
+		echo "<td>" .  $scores[2]['raw'] ."</td>";
+		echo "<td>" .  $scores[3]['raw'] ."</td>";
+		echo "<td>". $scores['essay']['score'] . "</td>";
+		echo "<td>" .  $scores[1600]['raw'] ."</td>";
+		echo "<td>" .  $scores[2400]['raw'] ."</td>";
+
+
+		echo "</tr><tr>";
+	?>
+	<tr><td style="font-weight:bold">Reported Score</td>
+	<?	
+		echo "<td>" . $scores[1]['rep_score'] ."</td>";
+		echo "<td>" . $scores[2]['rep_score'] ."</td>";
+		echo "<td>" . $scores[3]['rep_score'] ."</td>";
+		echo "<td>" . $scores['essay']['score'] ."</td>";
+		echo "<td>" . $scores[1600]['rep_score'] ."</td>";
+		echo "<td>" . $scores[2400]['rep_score'] ."</td>";
+		echo "</tr><tr>";
+	?>
+	<tr><td style="font-weight:bold">Percentile</td>
+	<?	
+		echo "<td> %". $scores[1]['perc'] ."</td>";
+		echo "<td> %". $scores[2]['perc'] ."</td>";
+		echo "<td> %". $scores[3]['perc'] ."</td>";
+		echo "<td> Out of 6</td>";
+		echo "<td> %". $scores[1600]['perc'] ."</td>";
+		echo "<td> %". $scores[2400]['perc'] ."</td>";
+	
+	echo "</tr></table>";
+		
+	
+		
+	
+	
+}
+/*-------------------------------------------------------------------*/
+/* function	act_test_results										 */
+/*-------------------------------------------------------------------*/
+function show_act_results($student_id, $test_id){
+	$scores = get_act_scores($student_id, $test_id);
+	
+// printarray($scores);
+	?>
+	<table border="3"><tr><th>&nbsp;</th><th>English</th><th>Math</th><th>Reading</th><th>Science</th><th>Composite</th><th>Essay</th></tr>
+	<tr><td>Raw Score</td>
+	<?	
+	for($i=1;$i <= 4; $i++){
+		echo "<td>" .  $scores[$i]['raw'] ."</td>";
+	}
+		echo "<td>$nbsp</td><td>" . $scores[5]['raw'] ." </td></tr>";
+	?>
+	<tr><td>Reported Score</td>
+	<?	
+	for($i=1;$i <= 4; $i++){
+		echo "<td>" . $scores[$i]['rep_score'] ."</td>";
+	}
+	echo "<td>". $scores['comp']['rep_score'] . "</td><td>" . $scores[5]['rep_score'] ." </td></tr>";
+	
+	?>
+	<tr><td>Percentile</td>
+	<?	
+	
+	for($i=1;$i <= 4; $i++){
+		echo "<td> %". $scores[$i]['perc'] ."</td>";
+	}
+	
+	echo "<td> %". $scores['comp']['perc'] . "</td><td> %" . $scores[5]['perc'] ." </td></tr></table>";
+		
+	
+		
+}
+/*-------------------------------------------------------------------*/
+/* function	store get_test_scores													 */
+/*-------------------------------------------------------------------*/
+function get_act_scores($student_id, $test_id){
+	$secQS = "select id, section_num from TP_Test_Sections where test_id = $test_id order by id";
+	
+	$SRS = runquery($secQS);
+	$tot = 0;
+	
+	while($row = mysql_fetch_array($SRS)){
+		
+		$scores[$row[section_num]] = get_sec_scores($student_id,$row[id]);
+		
+		if($row[section_num] <> 5)
+			$tot = $tot + $scores[$row[section_num]]['rep_score'];
+		
+	}
+	
+	$rep = $scores['comp']['rep_score'] = round($tot/4);
+	
+	$scores['comp']['perc'] = singlequery("select percentile from TP_Percentile_Converter where percentile_type = 6 and reported_score = $rep");
+
+	
+	return $scores;
+	
+	
+}
+/*-------------------------------------------------------------------*/
+/* function	store get_test_scores													 */
+/*-------------------------------------------------------------------*/
+function get_sat_scores($student_id, $test_id){
+
+$eqs = "select a.raw_points from TP_Student_Answers a where a.student_id = $student_id and archived = 0 and a.question_id = (select q.id from TP_Test_Questions q where q.section_id = (select s.id from TP_Test_Sections s where s.test_id = $test_id and s.section_num = 1) and q.question_num =1 )";
+
+// echo " eqs is $eqs <BR>";
+
+$scores['essay']['score'] = $essay_score = singlequery($eqs);
+
+
+
+for($i=1; $i <= 3; $i++){	
+	$rqs = "SELECT sum(raw_points) as actual, (sum(raw_points) /count(*) * (select t.per_test FROM TP_Section_Type t where t.id = $i)) as raw FROM `TP_Student_Answers` a WHERE student_id = $student_id and archived = 0 and question_id IN (select q.id from TP_Test_Questions q where q.section_id in (select s.id from TP_Test_Sections s where s.section_type_id = $i and s.test_id = $test_id))";
+	$scores[$i]= rowquery($rqs);
+	$raw = round($scores[$i]['raw']);
+	$scores[$i]['raw'] = $raw;
+	
+//	$essay_q_id = singlequery("");
+//	$essay_score = $scores['essay']['score'] = singlequery("select raw_points from TP_Student_Answers where student_id = $student_id and question_id = $essay_q_id");
+	
+// echo "raw is $raw<BR>";	
+	
+	
+	$proc = process_raw_score($raw, $i, $essay_score);
+	$scores[$i]['rep_score'] = $proc['rep_score'];
+	$scores[$i]['perc'] = $proc['perc'];
+}
+
+
+
+$scores[1600]['actual'] = $scores[1]['actual'] + $scores[2]['actual'];
+$scores[1600]['raw'] = $scores[1]['raw'] + $scores[2]['raw'];
+$rep = $scores[1600]['rep_score'] = $scores[1]['rep_score'] + $scores[2]['rep_score'];
+$scores[1600]['perc'] = rep_to_perc($rep,NULL, 2);
+
+$scores[2400]['actual'] = $scores[1]['actual'] + $scores[2]['actual'] + $scores[3]['actual'];
+$scores[2400]['raw'] = $scores[1]['raw'] + $scores[2]['raw'] + $scores[3]['raw'];
+$rep = $scores[2400]['rep_score'] = $scores[1]['rep_score'] + $scores[2]['rep_score'] + $scores[3]['rep_score'] ;
+$scores[2400]['perc'] = rep_to_perc($rep,NULL, 1);
+
+
+	return $scores;
+	
+}
+/*-------------------------------------------------------------------*/
+/* function	store ACT_Scores										 */
+/*-------------------------------------------------------------------*/
+function get_sec_scores($student_id, $section_id){
+	$rawqs = " select SUM(raw_points) from TP_Student_Answers where question_id in(select q.id from TP_Test_Questions q where q.section_id = $section_id) and student_id = $student_id and archived = 0";
+	
+	$raw = $sec['raw'] = singlequery($rawqs);
+	
+// echo "rawqs is $rawqs <BR>";	
+	
+//	echo " select SUM(raw_points) from TP_HW_Answers where section_id = $section_id and student_id = $student_id gives $raw<BR>";
+
+// should be consolidated into one query ADDED SEPARATELY AND I WAS TOO LAZY
+	$sec_type = singlequery("select section_type_id from TP_Test_Sections where id = $section_id");
+	$sec_probs = singlequery("select count(*) from TP_Test_Questions where section_id = $section_id ");
+	$tot_probs = singlequery("select per_test from TP_Section_Type where id = $sec_type");
+	$raw = round($raw * $tot_probs / $sec_probs);
+		
+	$rep = $sec['rep_score']  = singlequery("select reported_score from TP_Score_Converter where section_type_id = $sec_type and raw_score = $raw");
+	
+// echo "select reported_score from TP_Score_Converter where section_type_id = $sec_type and raw_score = $raw gives $rep <br>";	
+	
+	
+	
+	
+	if(!isEmpty($rep)){
+		$sec[perc] = singlequery("select percentile from TP_Percentile_Converter where reported_score = $rep and percentile_type = (select id from TP_Percentile_Types where section_type_id = $sec_type)");
+	} else {
+		$$sec[perc] = 0;
+	}
+//	echo "select percentile from TP_Percentile_Converter where reported_score = $rep and percentile_type = (select id from TP_Percentile_Types where section_type_id = $sec_type) <BR>";
+	
+	
+	
+	return $sec;
+}
+
+/*-------------------------------------------------------------------*/
+/* function	archive													 */
+/* inserts or updates the answers given into the database			 */
+/* 	grades the answers for each questions							 */
+/* 	enters the results for each questions							 */
+/*-------------------------------------------------------------------*/
+function act_sec_array(){
+	$secs = array(1=>"English","Math","Reading","Science","Essay");
+	
+	return $secs;
+	
+}
+/*-------------------------------------------------------------------*/
+/* function	grade_test_section													 */
+/* inserts or updates the answers given into the database			 */
+/* 	grades the answers for each questions							 */
+/* 	enters the results for each questions							 */
+/*-------------------------------------------------------------------*/
+function grade_test_section($student_id, $section_id, $arAns, $other=NULL){
+	
+		$sec_size = singlequery("select num_questions from TP_SAT_Sections where id = $section_id");
+		
+//get previous answers if they exist		
+		$redo = singlequery("select count(*) from TP_HW_Answers where section_id = $section_id and student_id = $student_id");
+				
+		$vals = "(";
+		$correct_an = MySQL_fillArray("number", "answer", "TP_SAT_Questions", " where section_id = $section_id", "number");
+		
+		if($redo > 0){ // if there are previous answers, we compare and update
+			$prev_answers = MySQL_fillArray("problem", "answer", "TP_HW_Answers", " where section_id = $section_id and student_id = $student_id and section_id IS NOT NULL", "problem");
+		
+// grade and update if there are previous answers
+			for($i = 1; $i <= $sec_size; $i++) {
+				
+// they are not the same we update them. If they are the same, just leave them as they are
+// echo "$i the answers are $arAns[$i],$prev_answer[$i] <BR>";	
+$comp = strcasecmp($arAns[$i],$prev_answer[$i]);
+
+// echo "comparing $arAns[$i], $correct_an[$i] and OLD NEW is $arAns[$i],$prev_answers[$i]  $comp <BR>";
+				
+				if(($arAns[$i] == NULL) or (strcasecmp($arAns[$i],$prev_answers[$i]) <> 0)){ 
+					$res = grade_test_q($arAns[$i], $correct_an[$i],$i);
+//grade_test_q($ans, $ca,$question_id=NULL, $penalty = NULL, $reward = NULL, $checkable = NULL)					
+
+// printarray($res);					
+					
+					$UQS = "Update TP_HW_Answers set answer = '$arAns[$i]', result = '$res[res]', raw_points = $res[raw_score], date = NOW() where problem = $i and section_id = $section_id and student_id = $student_id";
+					
+// echo "update string is $UQS <BR>";
+					
+					$RS = runquery($UQS);
+// echo "the result of the update is $RS <BR><BR>";					
+						
+				}
+			}// for if there are already answers
+		} else { // if this is the first time answers have been entered
+			
+			$section_num = singlequery("select section_num from TP_SAT_Sections where id = $section_id");
+			$test_id = singlequery("select test_id from TP_SAT_Sections where id = $section_id");
+			$student_name = singlequery("select CONCAT(first_name, ' ', last_name) as name from PTStudentInfo_New   where id = $student_id");
+			
+			$col = "(student_id, section_id, problem, answer, result, raw_points, correct_answer)";
+			$vals = "";
+		
+			for($i = 1;  $i <= $sec_size; $i++) {
+				$res = grade_test_q($arAns[$i], $correct_an[$i]);
+//grade_test_q($ans, $ca,$question_id=NULL, $penalty = NULL, $reward = NULL, $checkable = NULL)				
+				$vals .= "($student_id, $section_id, $i, '$arAns[$i]', '$res[res]', $res[raw_score], '$correct_an[$i]',NOW()),";
+				//echo "new val $i <BR>";
+			}
+			
+			$vals = substr($vals, 0, -1);
+			
+			$IQS = "Insert into TP_HW_Answers (student_id, section_id, problem, answer, result, raw_points, corect_answer, date) values  $vals ";
+			
+
+			// echo "$IQS is the query<BR>";
+			
+			$RS = runquery($IQS);
+			
+			
+		}
+			
+
+			
+	
+	
+}
+/*-------------------------------------------------------------------*/
+/* function	grade_act_q												 */
+/* 																	 */
+/* 	return: array with result and raw score							 */
+/*-------------------------------------------------------------------*/
+function grade_act_q($ans, $ca, $qid=NULL){
+	$res = grade_test_q($ans, $ca,$qid,0,1);
+// grade_test_q($ans, $ca,$question_id=NULL, $penalty = NULL, $reward = NULL, $checkable = NULL)	
+	return $res;
+}
+/*-------------------------------------------------------------------*/
+/* function	archive													 */
+/* marks element with $field= $arch_id in table $strTableName as archived	 */
+/* 																	 */
+/* 	return: returns the id number of the newly created session		 */
+/*-------------------------------------------------------------------*/
+function get_act_numbers(){
+	
+	$num[1] = 75;
+	$num[2] = 60;
+	$num[3] = 40;
+	$num[4] = 40;
+	
+	return $num;
+	
+}
+
+
+/*-------------------------------------------------------------------*/
+/* function	archive													 */
+/* marks element with $field= $arch_id in table $strTableName as archived	 */
+/* 																	 */
+/* 	return: returns the id number of the newly created session		 */
+/*-------------------------------------------------------------------*/
+
+function select_testprep_student($varSelected=NULL,$varName = "student_id", $disName = "Test Prep Student", $testprep_id=NULL, $opts=NULL){
+
+$where = " where 1 = 1 ";
+
+//	($opts[table] == 1? $special = "":$special = "just_label");
+($opts[all] == 1? $where = "": $where = " $where and archived = 0 ");
+// echo "where is $where<BR>";
+$order = " order by student_name "; 
+
+$QStr = "select student_id, student_name from PT_TestPrep_Reg $where $order";
+
+// echo "query is $QStr<BR>";
+
+SelectFromQuery($QStr, $disName, $varName, $disArray, $varSelected, $strComment, $special, $labelFirst);
+	
+}
+
+/*-------------------------------------------------------------------*/
+/* function	just_select_act											 */
+/* puts select menu to select an ACT test							 */
+/* 																	 */
+/* 	return: returns the id number of the newly created session		 */
+/*-------------------------------------------------------------------*/
+
+function just_select_act($varSelected=NULL, $varName = "test_id", $disName = "ACT Test", $test_id=NULL, $labelFirst = "Select An ACT", $opts=NULL){
+	
+	$opts[act] = "ACT";
+	
+	select_test($varSelected,$varName, $disName, $test_id, $labelFirst, $opts);
+}
+
+/*-------------------------------------------------------------------*/
+/* function	select_test												 */
+/* puts select menu to select a test								 */
+/* 																	 */
+/* 	return: returns the id number of the newly created session		 */
+/*-------------------------------------------------------------------*/
+
+function just_select_test($varSelected=NULL, $varName = "test_id", $disName = "Test", $test_id=NULL, $labelFirst = "Select A Test", $order = NULL, $opts=NULL){
+	
+	$opts[table] = 0;
+	
+	select_test($varSelected,$varName, $disName, $test_id, $labelFirst, $order, $opts);
+}
+/*-------------------------------------------------------------------*/
+/* function	select_test												 */
+/* puts select menu to select a test								 */
+/* 																	 */
+/* 	return: returns the id number of the newly created session		 */
+/*-------------------------------------------------------------------*/
+
+
+function select_test($varSelected=NULL,$varName = "test_id", $disName = "Test", $test_id=NULL, $labelFirst = "Select A Test", $order = NULL, $opts=NULL){
+	
+	$where = " where 1 = 1 ";
+	if($opts[act])
+		$where .= " and test_type = (select id from TP_Type_Tests where abbreviation = 'ACT' or abbreviation = 'act') ";
+	if($opts[sat])
+		$where .= " and test_type = (select id from TP_Type_Tests where abbreviation = 'SAT' or abbreviation = 'sat') ";
+
+//	($opts[table] == 1? $special = "":$special = "just_label");
+	($opts[table] == 0? $special = "just":$special = "");
+	(isEmpty($opts[where])? $w = 1: $where = " and $opts[where] ");
+	
+	($opts[all]=1? $where .= "": $where .= " and archived <> 1 ");
+	
+	if($order == "alpha"){
+		$order = " order by name ASC ";
+	} else {
+		$order = " order by order_number ASC, name ASC"; 
+	}
+	
+	$QStr = "select id, name from TP_Test_Info $where $order";
+
+// echo "$QStr str <BR>";	
+	
+	SelectFromQuery($QStr, $disName, $varName, $disArray, $varSelected, $strComment, $special, $labelFirst);
+
+	
+	
+}
+/*-------------------------------------------------------------------*/
+/* function	select_test_source												 */
+/* puts select menu to select a test								 */
+/* 																	 */
+/* 	return: returns the id number of the newly created session		 */
+/*-------------------------------------------------------------------*/
+function just_test_source($varSelected=NULL,$varName = "test_source_id", $disName = "Test Source", $labelFirst = "Test Source",$strComment = "Please select the source or location of this test", $opts="just"){
+	$options[special] = $opts;
+	select_test_source($varSelected,$varName, $disName, $labelFirst,$strComment, $options);
+}
+
+
+function select_test_source($varSelected=NULL,$varName = "test_source_id", $disName = "Test Source", $labelFirst = "Test Source",$strComment = "Please select the source or location of this test", $opts=NULL){
+	
+	$where = " where 1 = 1 ";
+	
+	(isEmpty($opts[where])? $w = 1: $where = " and $opts[where] ");
+	
+//	($opts[table] == 1? $special = "":$special = "just_label");
+
+	$special = $opts[special];
+	($opts[all]=1? $where = "": $where = " and archived <> 1 ");
+	$order = " order by name "; 
+	
+	$QStr = "select id, name from TP_Test_Source $where $order";
+	
+	SelectFromQuery($QStr, $disName, $varName, $disArray, $varSelected, $strComment, $special, $labelFirst);
+	
+}
+/*----------------------------------------------------------------------------
+get_test_type_info($test_id, $other) 
+gets the information about a type of test, not an individual test given on an individual date
+returns an array with the information about that test from TP_Type_Tests
+INPUT
+test_id = the id number of the type of test
+----------------------------------------------------------------------------- */
+function get_test_type_info($test_id, $other=NULL){
+$TQStr = "select * from TP_Type_Tests where id = $test_id";
+$TestAR = rowquery($TQStr);
+
+return $TestAR;
+}
+
+/*----------------------------------------------------------------------------
+get_test_ini($test_id, $other = 0) 
+gets the abbreviation for a test
+returns an string
+INPUT
+test_id = the id number of the type of test
+----------------------------------------------------------------------------- */
+function get_test_ini($test_id, $other = 0){
+$TQStr = "select abbreviation from TP_Type_Tests where id = $test_id";
+$Test_ini = singlequery($TQStr);
+
+return $Test_ini;
+}
+/*----------------------------------------------------------------------------
+fix_TP_SAT_Questions(){
+
+----------------------------------------------------------------------------- */
+function fix_TP_SAT_Questions(){
+	runquery("update `TP_HW_Questions` a set a.section_id = (select s.id from TP_SAT_Sections s where s.test_id = a.test_id and s.section_number = a.section_num) where a.section_id IS NULL");
+}
+
+/*----------------------------------------------------------------------------
+fix_TP_HW_Answers(){
+----------------------------------------------------------------------------- */
+function fix_TP_HW_Answers(){
+	runquery("update `TP_HW_Answers` a set a.section_id = (select s.id from TP_SAT_Sections s where s.test_id = a.test_id and s.section_number = a.section_num) where a.section_id IS NULL");
+
+	runquery("update `TP_HW_Answers` a set a.student_id = (select t.student_id from PT_TestPrep_Reg t where t.id = a.testprep_id) where a.student_id IS NULL");
+
+}
+/**************************************************
+ tells whether an answer is right or incorrect or blank
+ returns an array array arres with 'raw' as the raw score 
+ and 'res' as the result 'correct', 'raw' or 'blank'
+***************************************************/
+
+ function getSATQResult($ans, $cor, $message, $spr){
+	if(isEmpty($ans)){ // if the answer is blank
+
+		$arres['raw'] = 0;
+		$arres['res'] = "blank";
+	} else { //if the put an answer, check if it is right
+		switch($message) {
+			case "range": //if a range of answers work it is also a SPR
+
+			    $arres['raw'] = 0; //assume that it is incorrect
+				$arres['res'] = "wrong";
+
+				eval('$ans='.$ans.';');
+				$cor = str_replace(" ","",$cor);
+				$arr_cor =  preg_split("/<=|<|>=|>/", $cor);
+				preg_match_all("/<=|<|>=|>/", $cor,$arr_sings);
+				$sign_left = $arr_sings[0][0]; $sign_right = $arr_sings[0][1];
+				eval('if ($arr_cor[0]'.$sign_left.'$ans && $ans'.$sign_right.'$arr_cor[2]) {$arres[raw]=1; $arres[res]="correct";}');
+			break;
+
+			case "multi": //if multiple answers are possible it is also a SPR
+
+				$arres['raw'] = 0; //assume that it is incorrect
+				$arres['res'] = "wrong";
+				$strcor = str_replace(",", "or", $cor);
+				$arCA = explode('or', $strcor);
+
+				while(list($key, $val) = each($arCA)){
+					$val = trim($val);
+					if((float)$ans == (float)$val){
+						$arres['raw'] = 1;
+						$arres['res'] = "correct";
+					}	
+				}
+			break;
+
+			default:	
+				if($ans == $cor or strtolower($ans) == $cor or $ans == strtolower($cor)) { // if the answer is correct
+					$arres['raw'] = 1;
+					$arres['res'] = "correct";
+				} else {
+					if(stristr('abcde', $ans[corect_answer]) == TRUE){
+						$arres['raw'] = -.25;	
+					} else {
+						$arres['raw'] = 0;
+					}
+					$arres['res'] = "wrong";
+					if($spr == 'spr') 	$arres['raw'] = 0; //if its a spr, points are never subtracted
+				}	// else the answer is incorrect
+		} // switch $message
+	}	// else answer was given
+
+	return $arres;
+}
+
+/**************************************************
+ get value of sat answer
+ inputs: answer, correcta, spr
+ ***************************************************/
+ function getSATval(){
+
+ 	if($result == "blank") return 0;
+	if($result == "incorrect") return -.25;
+	if($result == "correct") return 1;
+	
+	if($message == "multi"){ // if multiple answers are possible
+		$tempret = 0; //assume that it is incorrect
+		$arCA = explode($cor,'or');
+
+		while(list($key, $val) = each($arCA)){
+			$val = trim($val);
+			if($ans == $val) $tempret = 1;
+		}
+
+		return $tempret;
+	}	
+	if(isEmpty($ans)) {
+		 return 0;
+	} elseif($ans == $cor){
+		 return 1;
+	} elseif($ans <> $cor) {
+		if($message = "spr"){
+			return 0;
+		} else {
+			return -.25;
+		}
+	}
+}				
+
+/**************************************************
+
+ get raw score for an SAT section
+ inputs: test_id, sid (student id), section_type
+
+ ***************************************************/
+
+ function getSecRawScore($test_id, $sid, $section_type, $other){
+ 	$raw_score = 0;
+ 	$sq = "select section_num from TP_SAT_Sections where test_id = $test_id and section_type = '$section_type'";
+	$secRS = runquery($sq);
+
+	while($secar = mysql_fetch_array($secRS)){
+
+		$secnum = $secar['section_num'];
+		$rsq = "select sum(raw_points) from TP_SAT_Answers where test = $test_id and sid = $sid and section = $secnum";
+		$tempraw = singlequery($rsq);
+		$raw_score = $raw_score + $tempraw;
+
+		// echo "raw is $raw_score<BR>";
+	}
+	return $raw_score;
+
+}				
+
+/**************************************************
+ get reported score 
+ inputs: raw score, section type, essay score 
+ (essay score is given regardless and is always 0 for math and reading sections)
+ ***************************************************/
+ function getReportedScore($raws, $type, $essay,$test_type=NULL,$test_id=NULL){
+ 	if(isEmpty($essay)) $essay = 0;
+	$raws = round($raws);
+	if($test_type == 1){
+		$addwhere = "";
+		if($type == 'writing'){
+			$addwhere = " and  essay_score = '$essay' ";
+		}
+		$sq = "select reported_score from TP_SAT_Score_Converter where type = '$type' and raw_score = $raws $addwhere";
+		
+	}
+	if($test_type == 3){
+		$sq = "select reported_score from TP_Score_Converter where section_type_id = '$type' and raw_score = $raws";
+// echo $sq;
+	}
+// echo "sq is $sq<BR>";
+
+	$repsc = singlequery($sq);
+	return $repsc;
+
+}		
+/*----------------------------------------------------------------------------
+get_test_type($test_id) 
+puts the row to get test_id for a form
+----------------------------------------------------------------------------- */
+function get_test_type($disName='Select a Test', $varName='testid', $test_id=NULL, $strComment=NULL, $special=NULL, $labelFirst='select test', $cols=2){ 
+
+// echo "test_id is $test_id<BR>";
+
+	if($cols == 2) $div = " </td><td> ";
+
+	$test_qstr = "select id, abbreviation from TP_Type_Tests";
+	$test_RS = runquery($test_qstr);
+	
+	while($row = mysql_fetch_array($test_RS)){
+		$disArray[$row[0]] = $row[1];
+	}	
+	
+	putSelectInput($disName, $varName, $disArray, $test_id, $strComment, $special, $labelFirst);
+
+}	
+
+
+	
+
+
+
+

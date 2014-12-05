@@ -1,0 +1,369 @@
+<?php
+/*-----------------------------------------------------------------	
+getfolders
+takes (for now all variables are non-functional and the function only finds the last folder)
+$place - indicates which folder the function should locate (default is last)
+	
+$address - indicates the address to get the folder for (default is Self)
+$other - unused for now
+returns - the name of the folder
+
+-------------------------------------------------------------------*/
+
+function getfolder($place, $address, $other){
+	$homefinder = $_SERVER['PHP_SELF'];
+	
+	$numFolders = substr_count("$homefinder", "/") - 1;
+	if ($numFolders == 0){
+		return "none";
+	}	
+	
+	$arfolder = explode("/", $homefinder);
+	$folder = $arfolder[$numFolders];
+	
+	return($folder);
+}
+
+/*-----------------------------------------------------------------	
+returns todays date as a string year-month-dat	
+-------------------------------------------------------------------*/
+function gettodaydate($other, $other2){
+	$strtoday = date('Y-m-d');
+	return $strtoday;
+
+
+}
+/*-----------------------------------------------------------------	
+sets a number to be the input number of charectors long
+ 	inputs
+		$intVal
+		$intPlaces
+		
+	returns $strVal		
+-------------------------------------------------------------------*/
+function ZeroFill($intVal, $intPlaces){
+
+	$strVal = $intVal;
+	if($intVal == 0){
+		$intSize = 1;
+	} else {		
+		$intSize = log10($intVal) + 1;
+	}	
+	
+	for($r = 0; $intSize < $intPlaces; ++$intSize) {
+		$strVal = '0' . $intVal;
+	}
+	
+	return $strVal;	
+		
+}
+
+
+/*-------------------------------------------------------------------	*/
+/* converts a number of seconds to hours-minutes-seconds				*/
+/* used to convert Unix time stamp differences.							*/
+/*-------------------------------------------------------------------	*/
+function SecstoHMS($intSecs){
+
+	
+	$Secs = ZeroFill($intSecs % 60,2);
+	$intSecs = ($intSecs - $Secs) / 60;
+	$Mins = ZeroFill($intSecs % 60,2); 
+	
+	$strHMS = $Mins . ":" . $Secs;
+	
+
+	return $strHMS;
+}
+
+
+
+/*-------------------------------------------------------------------	*/
+/* puts the code for a back button					*/
+/*-------------------------------------------------------------------	*/
+function getBackButton(){
+	$BackButton = "<CENTER><FORM><INPUT TYPE=\"button\" VALUE=\"  BACK  \" onClick=\"history.go(-1)\"></FORM></CENTER>";
+	return $BackButton;
+}
+
+
+
+/*-------------------------------------------------------------------	*/
+/* puts the code for a back button various pages back			*/
+/*-------------------------------------------------------------------	*/
+function getXBackButton($intBack){
+	$BackButton = "<CENTER><FORM><INPUT TYPE=\"button\" VALUE=\"  BACK  \" onClick=\"history.go($intBack * -1)\"></FORM></CENTER>";
+	return $BackButton;
+}
+
+/*-------------------------------------------------------------------	*/
+/* checks that user is logged on					*/
+/*-------------------------------------------------------------------	*/
+Function checkLogons($idcookie, $where_to) {
+
+	if($idcookie <> "yes"){
+		header("Location:logon.phtml?problem=4&where_to=$where_to");
+	}
+} //END FUNCTION
+
+/*-------------------------------------------------------------------	*/
+/* prints to screen content of an Result Set				*/
+/*-------------------------------------------------------------------	*/
+function printRS($tempRS){
+
+if(mysql_num_rows($tempRS) > 0){
+
+	echo "<table border=\"3\" cellspacing=\"3\" cellpadding=\"3\">";
+	$temparray = mysql_fetch_array($tempRS);
+	while(list($key,$value ) = each($temparray)){
+		if(is_string($key)){
+			echo "<tr><td>$key  </td><td> $value</td></tr>";
+		}
+	} 
+	echo "</table>";
+}
+}
+/*-------------------------------------------------------------------	*/
+/* prints to screen content of an 2D array				*/
+/*-------------------------------------------------------------------	*/
+function printarray($temparray){
+
+	if(!(is_array($temparray))){
+		echo "<BR>array empty<BR>";
+	} else {	
+	
+		while (list ($key, $value) = each($temparray)){
+			echo "$key has the value $value<br>";
+			if (is_array($value)){
+				printarray($value);
+			}
+		} 
+		echo "<BR>";
+	}	
+}
+
+
+
+
+
+/*-------------------------------------------------------------------
+IsEmpty: returns true is what is passed is "", null, or not set
+INPUTS 	$varString
+OUTPUTS	$returnval
+-------------------------------------------------------------------*/
+function IsEmpty($varString){
+	
+	if (!(isset($varString))){
+		return true;
+	}
+	
+//	if (($varString == 0)){
+//		return true;
+//	}
+	
+	If(is_array($varString)){
+		return false;
+	}		
+	
+	If(is_int($varString)){
+		if($varString == 0){
+			return true;
+		} else {
+			return false;
+		}
+	} // dealing with integers
+	
+	If(is_string($varString)){
+//		echo "string is $varString <BR>";
+		
+		If(trim($varString) == ""){
+			return true;
+		} 
+	} 
+	
+	If(is_object($varString))
+		return false;	
+
+	If($varString == null){
+		return true;
+	} else {
+		return false;
+	}
+	
+//	echo "not a string so this is assoumed not to be empty  ";
+//	printobj($varString);
+//	echo "is it <BR>";
+	
+	return false;
+	
+}
+//END FUNCTION
+
+/*-------------------------------------------------------------------
+ConvertFromNull: converts null into "" and trims blank spaces
+INPUTS 	$varString
+OUTPUTS	$returnval
+-------------------------------------------------------------------*/
+function ConvertFromNull($varString){
+	if (!(isset($varString))){
+		$returnval = "";
+		return $returnval;
+	}
+	If($varString == null){
+		$returnval = "";
+		return $returnval;
+	} else {
+		return trim($varString);
+	}
+}
+
+/*-------------------------------------------------------------------
+getPassword: makes up a password randomly
+INPUTS 	$minLen, $maxLen
+OUTPUTS	$temppassword
+-------------------------------------------------------------------*/
+
+function getPassword($minLen, $maxLen){
+	$pwLen = rand($minLen, $maxLen);
+	for ($i = 1; $i <= $pwLen; $i++){
+		$typeChar = rand(1,3);
+		switch ($typeChar) {
+			case 1:
+				$temppassword = $temppassword . chr(rand(48,57));
+				break;
+			case 2:
+				$temppassword = $temppassword . chr(rand(65,90));
+				break;
+			case 3:
+				$temppassword = $temppassword . chr(rand(97, 122));
+				break;
+		} //switch($typechar);
+	}
+
+
+	return $temppassword;
+}
+
+/*-------------------------------------------------------------------	*/
+/* prints a Roster with the fields provided.  							*/
+/*	The fields are editable or deleteable								*/
+// the table must be created before this function is called
+// the table is also not closed
+/*-------------------------------------------------------------------	*/
+function view_table($strTable, $strFields, $strRestrictions, $booledit, $other){
+?>
+<table width="600" border="1" cellspacing="0" cellpadding="4" bordercolor="#000000" class=table_1><tr> 
+<?
+if(isEmpty($strRestrictions)) $strRestrictions = "1 = 1";
+
+
+$QStr = "select $strFields from $strTable where $strRestrictions";
+$tempRS = runquery($QStr);
+
+
+
+	$temparray = mysql_fetch_array($tempRS);
+	while(list($key,$value ) = each($temparray)){
+		if(is_string($key)){
+			echo "<th>$key  </th> ";
+		}
+	}
+		if($booledit) echo "<th> Action </th></tr>";
+	
+	reset($temparray); // go back to the beginning of the array
+	
+	do{ // cycle through each row in the table
+		echo "<TR>";
+		do { //print each value from each cell in the row
+			if(is_string($key)){
+				if(isEmpty($value)) $value = "&nbsp;";
+				echo "<TD align=\"center\">$value</TD>   ";
+				
+				
+			}
+		} while(list($key,$value ) = each($temparray));
+		if($booledit){
+			?>
+			<td align=\"center\" ><img src="../images/edit_pencil.gif" width="16" height="14" border="0"> &nbsp;&nbsp;<img src="../images/del_x.gif" width="13" height="13"></td></tr>
+			<?
+		}
+	} while($temparray = mysql_fetch_array($tempRS));
+
+	echo "</tr></table><BR>";
+	email_all_link($strTable, "", $strRestrictions, $other);
+} // end function view_table
+
+/*-------------------------------------------------------------------	*/
+/* print email list prints the list of the email addresses  							*/
+/*	separated by ; so they can be put in an email								*/
+
+/*-------------------------------------------------------------------	*/
+function list_emails($strTable, $strField, $strRestrictions, $other){
+	if(isEmpty($strRestrictions)) $strRestrictions = "1 = 1";
+	if(isEmpty($strField)) $strField = "email";
+	
+	$QStr = "select email from $strTable where $strRestrictions";
+	$i = 0;
+	$RS = runquery($QStr);
+	$are = mysql_fetch_array($RS);
+	$strEmails = $are[0];
+	
+	while($are = mysql_fetch_array($RS)){
+		$strEmails = $strEmails . "; $are[0]";
+	}
+	return $strEmails;
+}	
+/*-------------------------------------------------------------------	*/
+/* 	create email link to all members of a table							*/
+/*-------------------------------------------------------------------	*/
+function email_all_link($strTable, $strField, $strRestrictions, $other){
+	
+	$strTo = list_emails($strTable, $strField, $strRestrictions, $other);
+?>
+
+		<a href="mailto:<?=$strTo;?>">Email everyone in the roster</a>	
+<?
+
+}	
+
+
+/*-------------------------------------------------------------------	*/
+/* 	show a roster of an SAT class			  							*/
+/*	inputs are the class number						*/
+/*-------------------------------------------------------------------	*/
+function sat_class_roster($classid,$editable,$other){
+		$strRest = " class = " . $classid;
+		$strFields = "name as 'Parent', student_name as 'Student', email as 'Email', phone_number as 'Phone', extended_time as 'Extended Time'";
+	
+		view_table("PT_TestPrep_Reg", $strFields, $strRest, 0, "");
+}		
+
+function seminar_roster($semid,$editable,$other){
+		$strRest = " seminar_id = " . $semid;
+		$strFields = "parent_name as 'Parent',  student_name as 'Student',  phone_number as 'Phone',  email as 'Email'";
+	
+		view_table("TP_Seminar_Reg", $strFields, $strRest, 0, "");
+}		
+
+/*-------------------------------------------------------------------	*/
+/* 	converts am/pm times to 24 hr times			  							*/
+/*	inputs are the class number						*/
+/*-------------------------------------------------------------------	*/
+function ampmto24($timeAR,$other){
+// printarray($timeAR);
+
+	$hr = $timeAR["hour"];
+	$min = $timeAR["min"];
+	$ampm = $timeAR["ampm"];
+	
+	if($hr == 12) $ampm = -($ampm - 1200);
+	$ttime = 100*$hr + $min + $ampm;
+	$ttime = $ttime."00";
+// echo "$ttime is time <BR>";	
+
+	return $ttime;
+	
+		
+}		
+
+?>

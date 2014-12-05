@@ -1,0 +1,102 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+"http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<title>Untitled Document</title>
+<link href="../NewPTTcss.css" rel="stylesheet" type="text/css">
+<style type="text/css">
+<!--
+.plain {
+	font-weight: normal;
+}
+.style3 {font-weight: normal; font-size: 12px; }
+-->
+</style>
+</head>
+
+<body>
+
+<table width="686" border="0" cellpadding="3" cellspacing="0" background="../images/flowbg.gif">
+<?
+if (isset($_REQUEST['secret']) && $_REQUEST['secret'] == 'Osborne'){
+  echo '<tr><td height="25" colspan="2" valign="top"><span class="Head1_Green">
+        Your Information Has Been Entered</span></td></tr>';
+$ok_double_registration = 0;
+$res = runquery("select * from PT_Tutors where (personal_email='".addslashes(trim($_REQUEST['personal_email']))."') OR (mobile_phone='".addslashes(trim($_REQUEST['mobile_phone']))."') OR (first_name='".addslashes(trim($_REQUEST['first_name']))."' AND last_name='".addslashes(trim($_REQUEST['last_name']))."')");
+if (mysql_num_rows($res)){
+	$msg_double="Field with the value <b>";
+	$row = mysql_fetch_array($res);
+	if ($row['personal_email'] == trim($_REQUEST['personal_email']))
+		$msg_double.= $row['personal_email'];
+	elseif ($row['mobile_phone'] == trim($_REQUEST['mobile_phone']))
+		$msg_double.= $row['mobile_phone'];
+	elseif ($row['first_name'] == trim($_REQUEST['first_name']))
+		$msg_double.= $row['first_name']." ".$row['last_name'];
+	$msg_double.="</b> is already in the database.";
+}else
+	$ok_double_registration = 1;
+	
+if (!$ok_double_registration){
+	echo '<form name="form" method="post" action="gettutorinfo.php">';
+	putHiddenField("ok_double_registration", 0);
+	putHiddenField("msg_double", $msg_double);
+	foreach($_REQUEST as $k=>$v)
+		echo '<input type=hidden name="'.$k.'" value="'.$v.'">';
+	echo '</form>';
+	echo '<script>document.form.submit()</script>';
+	}else{
+	$strTableName = $_REQUEST['strTableName'];
+	$arMandFields = $_REQUEST['arMandFields'];
+	$_REQUEST['strNotUsed'] = str_replace(array("nickname","gc_name","email"),array(""),$_REQUEST['strNotUsed']);
+	$strNotUsed = $_REQUEST['strNotUsed'];
+	$tdstyle = $_REQUEST['tdstyle'];
+	//verify if the nickname already 
+	$index_nickname = 1;
+	$sw = 1;
+	while($sw == 1){
+	$nickname = trim(strtolower($_REQUEST['first_name'])).substr(trim(strtolower($_REQUEST['last_name'])),0,$index_nickname);
+		$row_n1 = singlequery("SELECT id FROM $strTableName WHERE nickname=\"".addslashes($nickname.($index_nickname > 1 ? $index_nickname : ''))."\" AND id!='".$_REQUEST['id']."' LIMIT 1");
+		$row_n2 = singlequery("SELECT id FROM ZZ_".$strTableName."_Archive WHERE nickname=\"".addslashes($nickname.($index_nickname > 1 ? $index_nickname : ''))."\" LIMIT 1");
+		if ($row_n1['id'] || $row_n2['id']){
+			$index_nickname++;
+		}
+		else
+			$sw = 0;
+	}
+	
+	if ($index_nickname>1){
+		$nickname=$nickname.$index_nickname;
+	}
+		
+	$_REQUEST['nickname'] = $nickname;
+	$_REQUEST['gc_name'] = $nickname;
+        $_REQUEST['email'] = $nickname.'@paulthetutors.com';
+	$tester = InsertFields($strTableName, $_REQUEST, $arMandFields, $strNotUsed, $tdstyle);
+	if (!is_int($tester)) {
+		echo $tester;
+	} else {
+          ptts_mail('paul@paulthetutors.com','tutor added', "Name: ". $_REQUEST['first_name']. ' ' .$_REQUEST['last_name']);
+        }
+      } //?
+} else {
+  echo '<tr><td height="25" colspan="2" valign="top"><span class="Head1_Green">
+        Invalid Secret Code</span></td></tr>';
+}
+?>
+    
+  <tr>
+    <td width="36" height="51" valign="top">&nbsp;</td>
+    <td width="509" height="51" valign="top">
+Go to the tutor's homepage (<a href="index_tutors.php">Click Here</a>)
+&nbsp;	
+    </td>
+	  
+	  
+  </tr>
+<tr>
+  <td height="138" colspan="3">&nbsp;</td>
+</tr>  
+</table>
+</body>
+</html>

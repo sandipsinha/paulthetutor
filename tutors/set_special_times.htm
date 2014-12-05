@@ -1,0 +1,314 @@
+<?php
+$msg = "";
+if(isset($_GET['del']))
+{
+	$time_id = $_GET['del'];
+	
+	$query="DELETE FROM PT_SchedSS_Spec WHERE id = $time_id";
+	
+	if(mysql_query($query))
+		$msg = "Deleted record!";
+	else
+		$msg = "Error";
+}
+
+if(isset($_POST['update']))
+{
+	
+	$time_id = $_POST['time_id'];
+	
+	$start_hours = $_POST['start_time_hours'];
+	$start_mins = $_POST['start_time_minutes'];
+	if(strlen($start_mins)==1)$start_mins='0'.$start_mins;
+	$start_ampm = $_POST['start_ampm'];
+	
+	
+	
+	$end_hours = $_POST['end_time_hours'];
+	$end_mins = $_POST['end_time_minutes'];
+	if(strlen($end_mins)==1)$end_mins='0'.$end_mins;
+	
+	$end_ampm = $_POST['end_ampm'];
+	
+	
+	
+	$clock_in = date("G:i:s", strtotime("$start_hours:{$start_mins}$start_ampm"));
+	$clock_out = date("G:i:s", strtotime("$end_hours:{$end_mins}$end_ampm"));
+	
+	$date = $_POST['date'];
+	$date_arr = explode('-',$date);
+	$date = $date_arr[2]."-".$date_arr[0]."-".$date_arr[1];
+	
+	
+	if(check_exists($tid, $date, $time_id))
+		$msg = "Error: Entry for this date has been set before";
+	else
+	{
+	
+		$query = "UPDATE PT_SchedSS_Spec SET 
+					  date = '$date',
+					  clock_in='$clock_in',
+					  clock_out='$clock_out'
+				  WHERE id = $time_id";
+				  
+		if(mysql_query($query))
+			$msg = "Updated record!";
+		else
+			$msg = "Error";
+	}
+	
+}
+
+function check_exists($tutor_id, $date, $time_id=0)
+{
+	
+	$query = "SELECT id from PT_SchedSS_Spec WHERE tutor_id=$tutor_id AND date = '$date' AND id != $time_id";
+	
+	
+	$result = mysql_query($query);
+	
+	return (mysql_num_rows($result)>0);
+		
+}
+
+
+
+if(isset($_POST['Add']))
+{
+	
+	$start_hours = $_POST['start_time_hours'];
+	$start_mins = $_POST['start_time_minutes'];
+	if(strlen($start_mins)==1)$start_mins='0'.$start_mins;
+	$start_ampm = $_POST['start_ampm'];
+	
+	
+	
+	$end_hours = $_POST['end_time_hours'];
+	$end_mins = $_POST['end_time_minutes'];
+	if(strlen($end_mins)==1)$end_mins='0'.$end_mins;
+	
+	$end_ampm = $_POST['end_ampm'];
+	
+	
+	
+	$tid = $_POST['tid'];
+	
+	$clock_in = date("G:i:s", strtotime("$start_hours:{$start_mins}$start_ampm"));
+	$clock_out = date("G:i:s", strtotime("$end_hours:{$end_mins}$end_ampm"));
+	
+	$date = $_POST['date'];
+	$date_arr = explode('-',$date);
+	$date = $date_arr[2]."-".$date_arr[0]."-".$date_arr[1];
+	
+	
+	if(check_exists($tid, $date))
+		$msg = "Error: Entry for this date has been set before";
+	else	
+	{	
+	
+	
+			$query = "INSERT INTO PT_SchedSS_Spec (tutor_id, date, clock_in, clock_out)
+						VALUES($tid, '$date', '$clock_in', '$clock_out')";
+			
+			
+			if(mysql_query($query))
+				$msg = "Added new record!";
+			else
+				$msg = "Error";
+	}
+	
+
+}
+
+if(isset($tutor_id))
+{
+	$tid = $tutor_id;
+
+	
+	
+}
+
+if(isset($tid))
+{
+	$today = date("Y-m-d");
+	
+	$query = "SELECT * FROM  PT_SchedSS_Spec WHERE tutor_id=$tid AND date >= '$today' ORDER BY DATE ASC";
+	$result = mysql_query($query);
+	
+	if(mysql_num_rows($result)==0 && $msg=="")
+		$msg = "No special date set for this tutor yet";
+}
+
+
+?>
+
+<link href="../NewPTTcss.css" rel="stylesheet" type="text/css">
+<link rel="stylesheet" type="text/css" href="/styles/form.css" />
+<script type="text/javascript" src="/includes/jquery-1.4.2.min.js"></script>
+
+<link rel="stylesheet" type="text/css" href="/includes/jquery-ui-1.8.4.custom.css"/>
+<script type="text/javascript" src="/includes/jquery-ui-1.8.4.custom.min.js"></script>
+
+<script type="text/javascript">
+
+
+$(document).ready(function(){
+
+	
+	$(".date").datepicker({ dateFormat: 'mm-dd-yy', defaultDate: '<?=date("m-d-Y")?>'  });
+	
+})
+
+</script>
+
+
+
+<span class="Head1_Green">Enter In and Out Times for Specific Date</span>
+<br>
+<br>
+
+<div style="text-align:center">
+	
+		
+		<?=$msg?>
+
+
+</div>
+
+<?php
+if(isset($tid) && $tid!=-1):
+
+?>
+
+
+
+<div id="form_container">
+	
+<form method="POST" action="set_special_times.php?tid=<?=$tid?>"> 
+
+
+
+<input type="hidden" name="tid" value="<?=$tid ?>" />
+
+<fieldset>  
+<legend>Add Special Times</legend>  
+<ol>  
+ 
+ <li>  
+<label for="date">Date</label>  
+<input id="date" name="date" class="text date" type="text"/>  
+</li> 
+
+ 
+<li>  
+<label for="start">Start</label>  
+<input id="start_time_hours" name="start_time_hours" class="text small" type="text"/>  
+
+<input id="start_time_minutes" name="start_time_minutes" class="text small" type="text"/> 
+
+
+<select class="small" name="start_ampm" id="start_ampm">
+  <option value="am">am</option>
+  <option value="pm">pm</option>
+</select>
+</li>  
+
+<li>  
+<label for="end">End</label>  
+<input id="end_time_hours" name="end_time_hours" class="text small" type="text"/>  
+<input id="end_time_minutes" name="end_time_minutes" class="text small" type="text"/> 
+
+<select class="small" name="end_ampm" id="end_ampm">
+  <option value="am">am</option>
+  <option value="pm">pm</option>
+</select>
+
+</li> 
+
+
+
+</ol>  
+</fieldset>  
+<fieldset class="submit">  
+<input class="submit" name="Add" type="submit"  
+value="Add" />  
+</fieldset>  
+</form>
+
+</div>
+
+
+<?php 
+
+
+
+while($record = mysql_fetch_object($result)){ ?>
+
+
+<?
+
+		$cur_date = date("m-d-Y",strtotime($record->date));
+		
+	
+		$clock_in = $record->clock_in;
+		$clock_out = $record->clock_out;
+		
+		
+		$start_hrs = date("g", strtotime($clock_in));
+		$start_mins = date("i",strtotime($clock_in));
+		$start_ampm = date("a", strtotime($clock_in));
+		
+		
+		
+		$end_hrs = date("g", strtotime($clock_out));
+		$end_mins = date("i", strtotime($clock_out));
+		$end_ampm = date("a", strtotime($clock_out));
+		
+		
+
+?>
+	
+	<form action="set_special_times.php?tid=<?=$tid?>" method="post">
+		
+		<input type="hidden" name="time_id" value="<?=$record->id ?>"/>
+		<input type="hidden" name="tid" value="<?=$tid ?>"/>
+		
+		<ul>
+			<li>  
+				<input name="date" class="text date" type="text" value="<?=$cur_date ?>"/> 
+									
+						
+			
+				<input  name="start_time_hours" class="text small" type="text" value="<?=$start_hrs ?>"/>  
+				
+				<input name="start_time_minutes" class="text small" type="text" value="<?=$start_mins ?>"/> 
+				
+				
+				<select class="small" name="start_ampm">
+				  <option value="am">am</option>
+				  <option value="pm" <?=$start_ampm=="pm"?"selected":"";?>>pm</option>
+				</select>
+				
+				
+				
+				
+				<input name="end_time_hours" class="text small" type="text" value="<?=$end_hrs ?>"/>  
+				<input name="end_time_minutes" class="text small" type="text" value="<?=$end_mins ?>"/> 
+				
+				<select class="small" name="end_ampm">
+				  <option value="am">am</option>
+				  <option value="pm" <?=$end_ampm=="pm"?"selected":"";?>>pm</option>
+				</select>
+				
+				<input class="submit" type="submit" name="update" value="Save" />  
+				<input type="button" value="Delete" onclick="document.location='set_special_times.php?tid=<?=$tid?>&del=<?=$record->id?>'"/> 
+
+			</li>
+		</ul>
+	</form>
+
+<?php } ?>
+
+<? endif; ?>
+<br>
+<a href="set_times.php">Set Normal Times for Each Day of the Week</a>

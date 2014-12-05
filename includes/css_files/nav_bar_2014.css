@@ -1,0 +1,131 @@
+/* Main Nav Menu */
+.navbar_container {
+	width: 100%;
+	height: 28px;
+	z-index:99999;
+}
+
+.navbar_container ul {
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 12px;
+	font-weight: bold;
+	margin: 0;
+	padding: 0 0px;
+	list-style: none;
+	display: inline-table;
+	position: relative;
+	background-image: url(../images/main-menu-item-bg.png);
+	background-repeat: repeat-x;
+}
+
+.navbar_container ul:after {
+	content:"";
+	clear:both;
+	display:block;
+}
+
+
+.navbar_container ul li {
+	display: inline;
+	position: relative;
+    float: left;
+    height: 28px;
+	background-image:url(../images/main-menu-item-bg.png);
+	background-repeat:repeat-x;
+}
+
+.navbar_container ul li a:hover {
+	color: #643A2D;
+}
+
+
+.navbar_container ul ul li a {
+	display: block;
+	position: relative;
+	background: none;
+	z-index:9999;
+
+	
+}
+
+.navbar_container ul li ul li {
+	display: block;
+	position: relative;
+	z-index:99999;
+
+	
+}
+
+.navbar_container ul ul { 
+	position:absolute;
+	display: none; 
+	z-index:99999;
+
+}
+
+.navbar_container ul li a {
+	display: block;
+	text-decoration: none;
+	color: #ffffff;
+	padding: 8px 10px 0px 10px; 
+	white-space: nowrap;
+	height: 28px;
+}
+
+.navbar_container ul ul a:hover {
+	color: #FFFFFF;
+	background-color: #A98257;
+	z-index:99999;
+
+}
+
+
+
+
+.navbar_container ul li:hover ul {
+	display: block;
+	margin-top: -8px;
+}
+
+.navbar_container li:hover li {
+	float: none;
+	font-size: 11px;
+	width:100%;
+	
+}
+
+.navbar2014 {
+	width: 100%;
+}
+
+
+
+/* modify the following to change the dropdown menus background style/color 
+ .navbar_container ul li a:hover { background: #617F8A; } */
+ .navbar_container li:hover ul li { 
+
+ 	background: #7f4c3a; 
+	border: #FFF solid 1px;
+	height: 20px;
+	vertical-align: central;
+	margin-top: -1px;	
+}  
+
+ .navbar_container li:hover ul li a { 
+	height: 17px;
+	padding-top: 3px;
+	margin: 0px;
+	vertical-align: central;
+}  
+
+ .navbar_container li:hover a:hover {
+	border: none; !important
+	
+ }
+ 
+.navbar_container .my_divider {
+	width: 4px;
+	height: 28px;
+	background-image:url(../images/main-menu-spacer-bg.png);
+	background-repeat: no-repeat;
+}

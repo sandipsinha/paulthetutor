@@ -1,0 +1,194 @@
+<?
+
+/*-------------------------------------------------------------------
+Purpose: Newly Created To provide an event on click of a checkbox
+ INSERTS Check Box  INTO A TABLE
+	disName - printed name
+	varName - name of field
+	varChecked - is boxed checked variable is either "checked" or blank, and is echoed regardless
+	disLabel - instructions for the field
+-------------------------------------------------------------------*/
+
+Function putCheckBoxInputEvent($disName, $varName, $varChecked, $varEvent) {
+?>
+   <tr>
+	<td>&nbsp;</td>
+	 <td>
+		<input type="checkbox" name="<? echo $varName; ?>" value="checked" <? echo $varChecked; ?> onclick="<? echo $varEvent; ?>">&nbsp;&nbsp;
+		<?echo $disName ?>	
+	</td>
+   </tr>
+<? }
+// END FUNCTION
+
+
+/*-------------------------------------------------------------------
+Purpose: Newly Created To provide with a tr with an id (Generally Used with show/hide js feature)
+ INSERTS SELECT INPUT INTO A TABLE
+	disName - printed name
+	varName - name of field
+	disArray - display values [key displayed, value is value]
+	varSelected - Passed Value that should be initially selected.  not the displayed value
+	disComments - instructions for the field
+-------------------------------------------------------------------*/
+
+Function putSelectInputShow($disName, $varName, $disArray, $varSelected, $strComment, $special, $labelFirst ='', $show) {
+?>
+   <tr id="<?php echo $show;?>" style="visibility:hidden;">
+	<td   valign="top">
+	  <div align="right">
+<? 	  echo $disName;
+	  if(preg_match("/required/",$special)){
+	  	echo "<font color=\"#FF0000\">*</font>";
+	  }
+
+?>
+
+	  </div>
+	</td>
+     <td>
+
+        <select name="<? echo $varName; ?>">
+ 		<option value=""
+<? 		If (!(isset($varSelected))){
+			echo "selected";
+		}
+	echo ">$labelFirst</option>";
+
+		while (list ($key, $val) = each ($disArray)) {
+			echo "<option value=\"$key\"";
+			If ($varSelected == $val){
+				echo " selected ";
+			}
+			echo ">$val </option> \r";
+		}
+		echo "</select> $strComment</td></tr>";
+}
+// END FUNCTION
+
+/* -------------------------------------------------------------------
+Purpose: Newly Created To provide with a tr with an id (Generally Used with show/hide js feature)
+INSERTS TEXT INPUT INTO A TABLE
+	disName - printed name
+	varName - name of field
+	varLen - length of text field
+	disLen - size of text box
+	varVal - value of text field
+	strComment - instructions for the field
+	special - wildcar for required, currency, etc....
+-------------------------------------------------------------------	*/
+Function putTextFieldShow($disName, $varName, $varLen, $disLen, $varVal, $strComment, $special,$show) {
+if(isEmpty($varLen)){
+	$varLen = 50;
+}	
+?>
+
+<tr valign="middle" id="<?php echo $show;?>" style="visibility:hidden;padding-bottom:10px;">
+	<td>
+	  <div align="right" valign="middle">
+	  <? echo $disName;
+	  if(preg_match("/required/",$special)){
+	  	echo "<font color=\"#FF0000\">*</font>";
+	  }
+	  	if(!(isEmpty($strComment))){
+		
+		echo "<span class=\"form_comments\"> <br>$strComment </span>";
+	}	
+
+	  ?>
+
+	  </div>
+	</td>
+	<td>
+<?
+	if(preg_match("/currency/",$special)){
+		echo "$";
+	}
+	echo "<input type=\"text\" name=\"$varName\" size=\"$disLen\" maxlength=\"$varLen\" value=\"$varVal\"> ";
+?>
+	</td>
+   </tr>
+<? }
+//END FUNCTION
+
+
+/*-------------------------------------------------------------------
+Purpose: Newly Created To provide an event on selection (Generally Used with show/hide js feature)
+ INSERTS SELECT INPUT INTO A TABLE
+	disName - printed name
+	varName - name of field
+	disArray - display values [key displayed, value is value]
+	varSelected - Passed Value that should be initially selected.  not the displayed value
+	disComments - instructions for the field
+-------------------------------------------------------------------*/
+
+Function putSelectInputOnChange($disName, $varName, $disArray, $varSelected, $strComment, $special, $labelFirst ='',$event) {
+?>
+   <tr>
+	<td   valign="top">
+	  <div align="right">
+<? 	  echo $disName;
+	  if(preg_match("/required/",$special)){
+	  	echo "<font color=\"#FF0000\">*</font>";
+	  }
+
+?>
+
+	  </div>
+	</td>
+     <td>
+
+        <select name="<? echo $varName; ?>" id="<? echo $varName; ?>" <?php echo $event ?>>
+ 		<option value=""
+<? 		If (!(isset($varSelected))){
+			echo "selected";
+		}
+	echo ">$labelFirst</option>";
+
+		while (list ($key, $val) = each ($disArray)) {
+			echo "<option value=\"$key\"";
+			If ($varSelected == $val){
+				echo " selected ";
+			}
+			echo ">$val </option> \r";
+		}
+		echo "</select> $strComment</td></tr>\r";
+}
+// END FUNCTION
+
+function get_sched_dates1($dow, $startdate, $enddate, $other=''){
+	$arr_dates = array();
+	$startdate2 = $startdate;
+	$enddate2 = $enddate;
+	
+	if($dow!="" && $dow!=0)
+	{
+		echo "===".$dow."===";
+		die('stop');
+		if (!is_int($dow)){
+			while(date("l", strtotime($startdate2))!=$dow)
+				$startdate2 = date('Y-m-d', strtotime($startdate2." +1 day"));
+		}else{
+			while(date("w", strtotime($startdate2))!=$dow)
+				$startdate2 = date('Y-m-d', strtotime($startdate2." +1 day"));
+		}
+			while(strtotime($startdate2) <= strtotime($enddate2)){
+			if ($arr_dates[0] == '')
+				$arr_dates[] = $startdate2;
+			$startdate2 = date('Y-m-d', strtotime($startdate2 . " +1 week"));
+			if (strtotime($startdate2)<=strtotime($enddate2))
+				$arr_dates[] = $startdate2;
+		}
+	}
+	else
+	{
+		
+		$startdate2 = date('Y-m-d', strtotime($startdate2." +1 day"));
+		$arr_dates[] = $startdate2;
+	}
+	
+	
+	return $arr_dates;
+} 
+
+?>

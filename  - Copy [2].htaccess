@@ -1,0 +1,21 @@
+#DirectoryIndex index.htm index.html
+Redirect 301 /googlemaps/index.htm http://maps.google.com/maps/place?cid=17839481462385877244&q=paul+the+tutor%27s&hl=en&sll=37.828089,-122.25024&sspn=0.006295,0.006295&ie=UTF8&ll=37.831938,-122.257147&spn=0,0&z=16
+Redirect 301 /register /parents/fam_register.php
+Redirect 301 /login /login.php
+
+Redirect 301 /tutors/gmail.php https://docs.google.com/document/d/1QYiVynAI_gNPXD9HwjgU4ejCg9NTfzr3ko7lOGXnc_I/edit?authkey=CPWYg-EH
+Redirect 301 /webmail http://webmail.paulthetutors.com
+Redirect 301 /squashladder https://docs.google.com/spreadsheet/ccc?key=0AnsMESbm-Ny8dEFES1duamhRT1JONUFSY1dWOHlQcUE#gid=0 
+#Redirect 301 /index.htm http://www.paulthetutors.com/index.php
+
+#Redirect 301 /index.html http://www.paulthetutors.com/index.php
+
+#ErrorDocument 403 /
+#ErrorDocument 404 /
+
+Options +FollowSymLinks
+RewriteEngine On
+
+RewriteCond %{HTTP_HOST} ^[^.]+\.[^.]+$
+RewriteRule ^(.*)$ http://www.%{HTTP_HOST}/$1?%{QUERY_STRING} [R=301,L]
+RewriteRule ^index.html?/?$ index.php?%{QUERY_STRING} [L]

@@ -1,0 +1,115 @@
+<link href="../includes/paulthetutors.css" rel="stylesheet" type="text/css">
+<style type="text/css">
+<!--
+.plain {
+	font-weight: normal;
+}
+.book_position {
+	left: 5px;
+	top: 450px;
+	position: absolute;
+}
+.style6 {font-weight: normal; font-size: 11px; }
+.pic_location {
+	position: absolute;
+	left: 450px;
+	top: 175px;
+}
+-->
+</style>
+<SCRIPT LANGUAGE="javascript">
+<!--
+function openpop(strURL){
+window.open (strURL,'newwindow',config='height=400,width=550,toolbar=no,menubar=no,scrollbars=yes,resizable=yes,location=no,directories=no,status=no');
+}
+-->
+</SCRIPT>
+
+</head>
+
+<body>
+<table width="686" border="0" cellpadding="2" cellspacing="0" background="images/flowbg.gif">
+  <tr >
+    <td height="25" colspan="2"" valign="top" class="Head1_Green">Sign Up for
+      Test Prep </td>
+    <td width="96" rowspan="2"" valign="top">&nbsp;</td>
+  </tr>
+  <tr>
+    <td width="30" valign="top"><div align="left"></div></td>
+    <td width="548" valign="top"> <br>
+      <span class="Head1">1.Personal Information</span> <BR>
+	  First tell us a bit about the student which we will be prepping.
+	   <p align="left">
+      <form name="form1" method="post" action="testprepreg2.php">
+<table>
+	<input type="hidden" name="strTableName" value="PT_TestPrep_Reg">
+<?
+$SStr = "select id, first_name, last_name from PTStudentInfo_New where fid = $fid";
+$res = runquery($SStr);
+    while($row = mysql_fetch_array($res)){
+		$student_name = "$row[first_name] $row[last_name]";
+        $arr_students[$row[id]] = $student_name;
+    }
+    putSelectInput('Choose Student', 'student_id', $arr_students, '', '', 'required','Choose Student');
+?>
+   <tr>
+	<td   valign="top">
+	  <div align="right">
+Learning Disability<font color="#FF0000">*</font>	  </div>
+	</td>
+     <td>
+ 
+        <select name="learning_disability">
+		<option value=""selected></option>
+		<option value="Yes - Diagnosed">Yes - Diagnosed </option> 
+<option value="Yes - Undiagnosed">Yes - Undiagnosed </option>
+<option value="No">No </option>
+<option value="Not Sure">Not Sure</option> 
+              </select> </td></tr>
+   <tr>
+	<td   valign="top">
+	  <div align="right">
+Extended Time<font color="#FF0000">*</font>	  </div>
+	</td>
+     <td>
+ 
+        <select name="extended_time">
+ 		<option value=""selected></option>
+<option value="Yes">Yes </option> 
+<option value="No">No </option> 
+<option value="Not Sure">Not Sure </option> 
+</select> </td></tr>
+ 
+</table>
+<font color="#FF0000">*</font> indicates a required field
+<span class="Head1">
+
+<table width="100%">
+ 
+
+	  <tr>
+		<td>
+		  <div align="center">
+		    <input type="submit" name="Submit" value="Submit">
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+		    <input type="reset" name="clear" value="Clear">
+		   </div>
+		</td>
+	  </tr>
+ 
+</table>
+<br>
+Want to see the schedule of classes?  <a href="http://www.paulthetutors.com/satclassdates.php" target="_blank">Just click here</a>
+<script language="JavaScript" type="text/javascript">
+ var frmvalidator = new Validator("form1");
+frmvalidator.addValidation("name","req","You must enter a value for Name");  frmvalidator.addValidation("student_name","req","You must enter a value for Student Name");  frmvalidator.addValidation("phone_number","req","You must enter a value for Phone Number Number");  frmvalidator.addValidation("email","req","You must enter a value for Email");  frmvalidator.addValidation("learning_disability","req","You must enter a value for Learning Disability");  frmvalidator.addValidation("extended_time","req","You must enter a value for Extended Time");   </script>		
+		
+		
+      </form>      
+      <p align="left"></td>
+  </tr>
+  <tr>
+    <td valign="top">&nbsp;</td>
+    <td colspan="2" valign="top" class="style6">&nbsp;</td>
+  </tr>
+</table>

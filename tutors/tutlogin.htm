@@ -1,0 +1,81 @@
+<?php 
+$msg = "";
+session_start();
+
+if(isset($_GET['logout']))
+{
+	session_destroy();
+	setcookie("paulthetutorlogin", "", time()-3600);
+	echo "Logged Out!";
+}
+
+$formcss = $strAbsPath . "/styles/form.css";
+
+if(isset($_GET['next']))
+	$next = $_GET['next'];
+
+if(isset($_POST['username'])) {
+	$username = $_POST['username'];
+	$password = $_POST['password'];
+	$query = "SELECT * FROM PT_Tutors WHERE username = '$username' AND 
+	password = '$password' AND archived != 1";
+	$result = mysql_query($query);
+	
+	if(mysql_num_rows($result)==0 || $result == false )
+		$msg = "Invalid Username or Password";
+	else {
+			$tutor = mysql_fetch_object($result);
+			$_SESSION['tutor_id'] = $tutor->id;
+			if(isset($_POST['cookie']))
+				setcookie("paulthetutorlogin", $tutor->id, time()+60*60*24*30);
+			else
+				setcookie("paulthetutorlogin", "", time()-3600);
+			
+			if(isset($next)) 
+				header("Location: $next");
+			else
+				header("Location: index.php");
+		}
+}
+?>
+
+<link href="../includes/paulthetutors.css" rel="stylesheet" type="text/css">
+<div style="text-align:center">
+	
+		
+		<?=$msg?>
+
+
+</div>
+
+<form method="POST" action="tutlogin.php<?php echo isset($next)?'?next='.$next:'' ?>">  
+<fieldset>  
+<legend class="Head1_Green">Login </legend>  
+<ol>  
+<li>  
+<label for="username">Username:</label>  
+<input id="username" name="username" class="text" type="text" />  
+</li>  
+<li>  
+<label for="password">Password:</label>  
+<input id="password" name="password" class="text" type="password" />  
+</li>  
+
+<li>  
+Store my information on this computer
+<input id="cookie" name="cookie" class="text" type="checkbox" />  
+</li> 
+
+</ol>  
+<p><a href="getlostinfo.php">forgot your information?</a></p>
+<p><BR>
+    
+</p>
+</fieldset>  
+<fieldset class="submit">  
+<input class="submit" type="submit"  
+value="Login" />  
+</fieldset>  
+</form>
+<BR><BR>
+<span class="Head2"><a href="gettutorinfo.php">Click Here</a> to register as a new tutor</span>

@@ -1,0 +1,1058 @@
+<?
+function emailverify($form, $email1, $email2, $message = "Email addresses do not match", $other) {
+    // JavaScript template
+    $javaScriptsTemplate = " <script type='text/javascript'>";
+    $javaScriptsTemplate .= " function verifyEmailsFor".$form."(){";
+    $javaScriptsTemplate .= " var emailBox1Value =(document.getElementsByName('".$email1."')!=null)? document.getElementsByName('".$email1."')[0].value:null;";
+    $javaScriptsTemplate .= " var emailBox2Value =(document.getElementsByName('".$email2."')!=null)? document.getElementsByName('".$email2."')[0].value:null;";
+    $javaScriptsTemplate .= " if (emailBox1Value != emailBox2Value || emailBox1Value==null || emailBox2Value==null) {";
+    $javaScriptsTemplate .= " alert('".$message."');";
+    $javaScriptsTemplate .= " return false;";
+    $javaScriptsTemplate .= " }";
+    $javaScriptsTemplate .= " return true;";
+    $javaScriptsTemplate .= " }";
+    $javaScriptsTemplate .= " if (window.addEventListener){window.addEventListener('load', attachSubmitHandlerFor".$form.", false);}";
+    $javaScriptsTemplate .= " else{window.attachEvent('onload', attachSubmitHandlerFor".$form.");}";
+    $javaScriptsTemplate .= " function attachSubmitHandlerFor".$form."(){";
+    $javaScriptsTemplate .= " if (document.getElementsByName('".$form."') != null) {";
+    $javaScriptsTemplate .= " document.getElementsByName('".$form."')[0].onsubmit = verifyEmailsFor".$form.";";
+    $javaScriptsTemplate .= " }";
+    $javaScriptsTemplate .= " }";
+    $javaScriptsTemplate .= " </script>";
+    echo $javaScriptsTemplate;
+}
+
+
+/* -------------------------------------------------------------------
+INSERTS TEXT INPUT INTO A TABLE
+	disName - printed name
+	varName - name of field
+	varLen - length of text field
+	disLen - size of text box
+	varVal - value of text field
+	strComment - instructions for the field
+	special - wildcar for required, currency, etc....
+-------------------------------------------------------------------	*/
+Function putTextField($disName, $varName, $varLen, $disLen, $varVal, $strComment, $special) {
+if(isEmpty($varLen)){
+	$varLen = 50;
+}	
+?>
+   <tr valign="middle">
+	<td>
+	  <div align="right" valign="middle">
+	  <? echo $disName;
+	  if(preg_match("/required/",$special)){
+	  	echo "<font color=\"#FF0000\">*</font>";
+	  }
+	  	if(!(isEmpty($strComment))){
+		
+		echo "<span class=\"form_comments\"> <br>$strComment </span>";
+	}	
+
+	  ?>
+
+	  </div>
+	</td>
+	<td>
+<?
+	if(preg_match("/currency/",$special)){
+		echo "$";
+	}
+	echo "<input type=\"text\" name=\"$varName\" size=\"$disLen\" maxlength=\"$varLen\" value=\"$varVal\"> ";
+?>
+	</td>
+   </tr>
+<? }
+//END FUNCTION
+
+
+/* -------------------------------------------------------------------
+INSERTS HIDDEN INPUT INTO A TABLE
+	disName - printed name
+	varName - name of field
+	varVal - value of text field
+-------------------------------------------------------------------	*/
+Function putHiddenField($varName, $varVal) {
+?>
+	<input type="hidden" name="<?=$varName;?>" value="<?=$varVal;?>">
+<? }
+//END FUNCTION
+
+
+
+/*-------------------------------------------------------------------
+ INSERTS password INPUT TO A TABLE
+	disName - printed name
+	varName - name of field
+	varLen - length of password field
+	disLen - size of password box
+	varVal - value of password field
+	disLabel - instructions for the field
+-------------------------------------------------------------------*/
+
+
+Function putPasswordEZ() {
+?>
+   <tr valign="middle">
+	<td>
+	  <div align="right">
+	  Password<font color="#FF0000">*</font>
+	  </div>
+	</td>
+	<td>
+	  <input type="password" name="password" size="10" maxlength="10">
+	</td>
+   </tr>
+<? }
+// END FUNCTION
+
+/*-------------------------------------------------------------------
+ INSERTS password INPUT TO A TABLE
+	disName - printed name
+	varName - name of field
+	varLen - length of password field
+	disLen - size of password box
+	varVal - value of password field
+	disLabel - instructions for the field
+-------------------------------------------------------------------*/
+
+
+Function putPasswordInput($disName, $varName, $varLen, $disLen, $varVal,$disLabel='', $special='') {
+?>
+   <tr valign="middle">
+	<td>
+	  <div align="right">
+	  <? echo $disName; if(preg_match("/required/",$special)){
+          echo "<font color=\"#FF0000\">*</font>";
+      }?>
+	  </div>
+	</td>
+	<td>
+	  <input type="password" name="<? echo $varName; ?>" size="<? echo $disLen; ?>" maxlength="<? echo $varLen; ?>" value="<? echo $varVal; ?>">
+	  <? echo $disLabel; ?>
+	</td>
+   </tr>
+<? }
+// END FUNCTION
+
+/*-------------------------------------------------------------------
+ INSERTS Cell Carrier INPUT TO A TABLE
+	disName - printed name
+	varName - name of field
+	varLen - not used
+	disLen - not used
+	varVal - value of field
+	disLabel - instructions for the field
+-------------------------------------------------------------------*/
+
+
+Function putCarrierSelect($disName, $varName, $varLen, $disLen, $varVal,$disLabel='', $special='') {
+?>
+   <tr valign="middle">
+	<td>
+	  <div align="right">
+	  <? echo "Cell Carrier";
+          if(preg_match("/required/",$special)){
+          echo "<font color=\"#FF0000\">*</font>";
+      }?>
+	  </div>
+	</td>
+	<td>
+	  <select name="<? echo $varName; ?>">
+          <?if(!$varVal) { ?><option value="">---</option><?}?>
+          <? $r = mysql_query("SELECT * FROM PT_SMS_domains");
+             if ($r && mysql_num_rows($r) >0) {
+               while($row = mysql_fetch_assoc($r)) {
+                 echo '<option  value="'.$row['id'].'"'. (($row['id'] == $varVal) ? 'selected>' : '>').$row['name'].'</option>';
+               }
+             }
+          echo "</select>";
+	  echo $disLabel; ?>
+          
+	</td>
+   </tr>
+<? }
+// END FUNCTION
+
+/*-------------------------------------------------------------------
+ INSERTS Family ID INPUT TO A TABLE
+	disName - printed name
+	varName - name of field
+	varLen - not used
+	disLen - not used
+	varVal - value of field
+	disLabel - instructions for the field
+-------------------------------------------------------------------*/
+
+
+Function putFamilySelect($disName, $varName, $varLen, $disLen, $varVal,$disLabel='', $special='') {
+?>
+   <tr valign="middle">
+	<td>
+	  <div align="right">
+	  <? echo "Family";
+          if(preg_match("/required/",$special)){
+          echo "<font color=\"#FF0000\">*</font>";
+      }?>
+	  </div>
+	</td>
+	<td>
+	  <select name="<? echo $varName; ?>">
+          <?if(!$varVal) { ?><option value="">---</option><?}?>
+          <? $r = mysql_query("SELECT id, main_name FROM PT_Family_Info");
+             if ($r && mysql_num_rows($r) >0) {
+               while($row = mysql_fetch_assoc($r)) {
+                 echo '<option  value="'.$row['id'].'"'. (($row['id'] == $varVal) ? 'selected>' : '>').$row['main_name'].'</option>';
+               }
+             }
+          echo "</select>";
+	  echo $disLabel; ?>
+          
+	</td>
+   </tr>
+<? }
+// END FUNCTION
+
+/*-------------------------------------------------------------------
+ INSERTS text field INPUT TO A TABLE
+	disName - printed name
+	varName - name of field
+	varLen - length of password field
+	varRows - # of rows
+	varVal - value of field
+	disLabel - instructions for the field
+	special - wildcard
+-------------------------------------------------------------------*/
+
+Function putTextBoxField($disName, $varName, $varLen, $varRows, $varVal,$disLabel, $special) {
+?>
+   <tr>
+	<td   valign="top">
+	  <div align="right">
+<? 	  echo $disName;
+	  if(preg_match("/required/",$special)){
+	  	echo "<font color=\"#FF0000\">*</font>";
+	  }
+?>
+	  </div>
+	</td>
+	<td>
+	  <textarea name="<? echo $varName; ?>" cols="<?= $varLen; ?>" rows="<?= $varRows; ?>"><? echo $varVal; ?></textarea>
+	  <? echo $disLabel; ?>
+	</td>
+   </tr>
+<? }
+// END FUNCTION
+
+/*-------------------------------------------------------------------
+ INSERTS text field INPUT TO A TABLE
+	disName - printed name
+	varName - name of field
+	varLen - length of password field
+	varRows - # of rows
+	varVal - value of field
+	disLabel - instructions for the field
+	special - wildcard
+-------------------------------------------------------------------*/
+
+Function putTextBox($disName, $varName, $varLen, $varRows, $varVal,$disLabel, $special) {
+?>
+   <tr>
+	<td  valign="top">
+	  <div align="right" >
+<? 	  echo $disName;
+	  if(preg_match("/required/",$special)){
+	  	echo "<font color=\"#FF0000\">*</font>";
+	  }
+?>
+	  </div>
+	</td>
+	<td>
+	  <textarea name="<? echo $varName; ?>" cols="<?= $varLen; ?>" rows="<?= $varRows; ?>"><? echo $varVal; ?></textarea>
+	  <? echo $disLabel; ?>
+	</td>
+   </tr>
+<? }
+// END FUNCTION
+
+/*-------------------------------------------------------------------
+ INSERTS SELECT INPUT based on the results of a query string
+the first result of the query string will be the query value, the second will be displayed
+puts the results of the query into $disArray
+$disArray can have values already put into it	
+	disName - printed name
+	varName - name of field
+	disArray - display values [key displayed, value is value]
+	varSelected - Passed Value that should be initially selected.  not the displayed value
+	disComments - instructions for the field
+-------------------------------------------------------------------*/
+
+Function SelectFromQuery($QStr, $disName, $varName, $disArray, $varSelected, $strComment, $special, $labelFirst) {
+	$RS = runquery($QStr);
+	while($row = mysql_fetch_array($RS)){
+		$disArray[$row[0]] = "$row[1]";
+	}
+	putSelectInput($disName, $varName, $disArray, $varSelected, $strComment, $special, $labelFirst);
+}
+
+
+
+/*-------------------------------------------------------------------
+ INSERTS SELECT INPUT INTO A TABLE
+	disName - printed name
+	varName - name of field
+	disArray - display values [key displayed, value is value]
+	varSelected - Passed Value that should be initially selected.  not the displayed value
+	disComments - instructions for the field
+-------------------------------------------------------------------*/
+
+Function putSelectInput($disName, $varName, $disArray, $varSelected, $strComment, $special, $labelFirst ='') {
+?>
+   <tr>
+	<td   valign="top">
+	  <div align="right">
+<? 	  echo $disName;
+	  if(preg_match("/required/",$special)){
+	  	echo "<font color=\"#FF0000\">*</font>";
+	  }
+
+?>
+
+	  </div>
+	</td>
+     <td>
+
+        <select name="<? echo $varName; ?>">
+ 		<option value=""
+<? 		If (!(isset($varSelected))){
+			echo "selected";
+		}
+	echo ">$labelFirst</option>";
+
+		while (list ($key, $val) = each ($disArray)) {
+			echo "<option value=\"$key\"";
+			If ($varSelected == $val){
+				echo " selected ";
+			}
+			echo ">$val </option> \r";
+		}
+		echo "</select> $strComment</td></tr>\r";
+}
+// END FUNCTION
+
+/*-------------------------------------------------------------------
+ INSERTS Check Box  INTO A TABLE
+	disName - printed name
+	varName - name of field
+	varChecked - is boxed checked variable is either "checked" or blank, and is echoed regardless
+	disLabel - instructions for the field
+-------------------------------------------------------------------*/
+
+Function putCheckBoxInput($disName, $varName, $varChecked) {
+?>
+   <tr>
+	<td colspan="2">
+	  <div align="center">
+		<input type="checkbox" name="<? echo $varName; ?>" value="checked" <? echo $varChecked; ?>>&nbsp;&nbsp;
+		<?echo $disName ?>
+	  </div>
+	</td>
+   </tr>
+<? }
+// END FUNCTION
+
+/*-------------------------------------------------------------------	*/
+/* puts a row in a 2 column table w/ sumbit button			*/
+/*-------------------------------------------------------------------	*/
+
+Function putSubmit() {
+?>
+	  <tr>
+		<td colspan="2">
+		  <div align="center">
+		    <input type="submit" name="Submit" value="Submit">
+		   </div>
+		</td>
+	  </tr>
+
+<?php
+} /* END FUNCTION */
+
+
+/*-------------------------------------------------------------------	*/
+/* puts a row in a 2 column table w/ sumbit and clear buttons		*/
+/*-------------------------------------------------------------------	*/
+
+Function putSubmitClear() {
+?>
+	  <tr>
+		<td colspan="2">
+		  <div align="center">
+		    <input type="submit" name="Submit" value="Submit">
+			&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+		    <input type="reset" name="clear" value="Clear">
+		   </div>
+		</td>
+	  </tr>
+
+<?php
+} /* END FUNCTION */
+
+
+
+/* -------------------------------------------------------------------
+INSERTS TEXT INPUT INTO A TABLE
+	disName - printed name
+	varName - name of field
+	varLen - length of text field
+	disLen - size of text box
+	varVal - value of text field
+	strComment - instructions for the field
+	special - wildcar for required, currency, etc....
+-------------------------------------------------------------------	*/
+
+
+
+Function putTextInput($disName, $varName, $varLen, $disLen, $varVal, $strComment, $special) {
+?>
+   <tr valign="middle">
+	<td>
+	  <div align="right" valign="middle">
+	  <? echo $disName;
+	  if(preg_match("/required/",$special)){
+	  	echo "<font color=\"#FF0000\">*</font>";
+	  }
+	  ?>
+
+	  </div>
+	</td>
+	<td>
+<?
+	if(preg_match("/currency/",$special)){
+		echo "$";
+	}
+	echo "<input type=\"text\" name=\"$varName\" size=\"$disLen\" maxlength=\"$varLen\" value=\"$varVal\"> ";
+
+	echo $strComment;
+?>
+	</td>
+   </tr>
+<? }
+//END FUNCTION
+
+
+/* -------------------------------------------------------------------
+INSERTS Time INPUT INTO A TABLE
+	disName - printed name
+	varName - name of field
+	varVal - value of text field
+	strComment - instructions for the field
+-------------------------------------------------------------------	*/
+Function putTimeField2($disName, $varName, $varVal,$strComment, $special = '') {
+	$a_time = explode(" ",format_time_print($varVal));
+	$a_time2 = explode(":",$a_time[0]);
+	$time_hours = $a_time2[0];
+	$time_minutes = isset($a_time2[1]) ? $a_time2[1] : "00";
+	$ampm = isset($a_time[1]) ? $a_time[1] : '';
+	if ($ampm == "")
+		$ampm = "pm";
+?>
+   <tr valign="middle">
+	<td>
+	  <div align="right" valign="middle">
+	  <? echo $disName;
+	  if(preg_match("/required/",$special)){
+	  	echo "<font color=\"#FF0000\">*</font>";
+	  }
+	  ?>
+
+	  </div>
+	</td>
+	<td>
+
+		<input type="text" name="<?=$varName;?>[hour]" size="2" maxlength="2" value="<?=$time_hours;?>"> : 
+		<input type="text" name="<?=$varName;?>[minutes]" size="2" maxlength="2" value="<?=$time_minutes;?>"> 
+
+		<select name="<?=$varName;?>[ampm]"  id="ampm">
+		  <option value="am" <?=($ampm == "am" ? "selected" : "");?> >am</option>
+		  <option value="pm" <?=($ampm == "pm" ? "selected" : "");?> >pm</option>
+		</select>
+<?
+
+	echo $strComment;
+?>
+	</td>
+   </tr>
+<? }
+
+
+/* -------------------------------------------------------------------
+INSERTS Time INPUT INTO A TABLE
+	disName - printed name
+	varName - name of field
+	varVal - value of text field
+	strComment - instructions for the field
+-------------------------------------------------------------------	*/
+Function putTimeField($disName, $varName, $strComment, $varVal, $form_name, $other1, $other2) {
+	
+// echo "this is the varVal $varVal   ";	
+	
+	// set default values
+	$selAM = "";
+	$selPM = "selected";
+	$tempMin = "00";
+	$tempHour = "";
+	
+	if(!(isEmpty($varVal))){ 		// if a time is sent in convert from 24 hour to 12hr
+		$varVal =  str_ireplace(":","",$varVal);
+		$tempTime = $varVal;
+// echo "this is the varVal $varVal   "; 
+		$selAM = "selected";
+		$selPM = "";
+		
+		if($varVal >= 240000 and $varVal < 250000){ // if it is midnight but set as 240000
+			$tempTime = $varVal - 120000;
+			$selAM = "selected";
+			$selPM = "";
+		}	
+
+		if($varVal >= 130000 and $varVal < 240000){  		//if its after 1 pm
+			$selAM = "";
+			$selPM = "selected";
+			$tempTime = $varVal - 120000;
+		}
+		if($varVal >= 120000 and $varVal <130000){ // 12 noon to 1 pm
+			$selAM = "";
+			$selPM = "selected";
+		}
+		
+		if($varVal < 10000){ // if it is from 12midnight to 1 am
+			$tempTime = $tempTime + 120000;
+		}	 
+		
+		
+		//get the minute and hour values
+		$tempHour = substr($tempTime,0,-4);
+		$tempMin = substr($tempTime,-4,-2);
+	} // end what if a value is passed			
+		
+
+
+
+?>
+   <tr valign="middle">
+	<td>
+	  <div align="right" valign="middle">
+	  <? echo $disName;
+	  if(preg_match("/required/",$special)){
+	  	echo "<font color=\"#FF0000\">*</font>";
+	  }
+	  ?>
+
+	  </div>
+	</td>
+	<td>
+
+		<input type="text" name="<?=$varName;?>[hour]" size="2" maxlength="2" value="<?=$tempHour;?>"> : 
+		<input type="text" name="<?=$varName;?>[min]" size="2" maxlength="2" value="<?=$tempMin;?>"> 
+
+		<select name="<?=$varName;?>[ampm]"  id="ampm">
+		  <option value="0" <?=$selAM;?> >am</option>
+		  <option value="1200" <?=$selPM;?> >pm</option>
+		</select>
+<?
+
+	echo $strComment;
+?>
+	</td>
+   </tr>
+<? }
+//END FUNCTION
+
+
+/* -------------------------------------------------------------------
+INSERTS Date INPUT INTO A TABLE
+	disName - printed name
+	varName - name of field
+	varLen - length of text field
+	disLen - size of text box
+	varVal - value of text field
+	strComment - instructions for the field
+	special - wildcar for required, currency, etc....
+-------------------------------------------------------------------	*/
+
+
+
+Function putDateField($disName, $varName, $varVal, $strComment, $special){
+if(isEmpty($disName)){
+	$disName = "Date";
+}
+if(isEmpty($varName)){
+	$varName = "date";
+}
+
+?>
+   <tr valign="middle">
+	<td>
+	  <div align="right">
+<?
+	 echo $disName;
+	 if(preg_match("/required/",$special)){
+	 	echo "<font color=\"#FF0000\">*</font>";
+	 }
+	 if(!(isEmpty($strComment))){
+		echo "<BR>$strComment";
+	 }
+	 putDateCell($varName);
+?>
+	  </div>
+	</td>
+   </tr>
+<? }
+//END FUNCTION
+
+
+/* -------------------------------------------------------------------
+INSERTS Date INPUT INTO A TABLE
+	disName - printed name
+	varName - name of field
+	varLen - length of text field
+	disLen - size of text box
+	varVal - value of text field
+	strComment - instructions for the field
+-------------------------------------------------------------------	*/
+
+
+
+Function putDateFieldPopup($disName, $varName, $varVal, $strComment, $special){
+	 putTextField($disName, $varName, 11, 11, format_date_print($varVal), $strComment, $special); 
+?>
+<script type="text/javascript">
+$(document).ready(function(){
+	jquery_date("<?=$varName?>");
+});
+</script>
+<?  
+}
+
+Function putDateTimeFieldPopup($disName, $varName, $varVal, $strComment, $special){
+	 $dt = explode(" ",$varVal);
+	 putDateFieldPopup($disName." Date", $varName.'[date]', $dt[0], $strComment, $special);
+	 putTimeField2($disName." Time", $varName.'[time]', isset($dt[1]) ? $dt[1]:0, $strComment);
+
+}
+//END FUNCTION
+
+Function putDateCell($varName) {
+?>
+	<td>
+
+<? putMonthsSelect($varName);	?>
+/
+			<select name="<?= $varName; ?>[day]">
+			  <option>1</option>
+			  <option>2</option>
+			  <option>3</option>
+			  <option>4</option>
+			  <option>5</option>
+			  <option>6</option>
+			  <option>7</option>
+			  <option>8</option>
+			  <option>9</option>
+			  <option>10</option>
+			  <option>11</option>
+			  <option>12</option>
+			  <option>13</option>
+			  <option>14</option>
+			  <option selected>15</option>
+			  <option>16</option>
+			  <option>17</option>
+			  <option>18</option>
+			  <option>19</option>
+			  <option>20</option>
+			  <option>21</option>
+			  <option>22</option>
+			  <option>23</option>
+			  <option>24</option>
+			  <option>25</option>
+			  <option>26</option>
+			  <option>27</option>
+			  <option>28</option>
+			  <option>29</option>
+			  <option>30</option>
+			  <option>31</option>
+			</select>
+			/
+<? putYearsSelect($varName); ?>
+
+
+		</font></div>
+	</td>
+<?
+}
+//END FUNCTION
+
+/*-------------------------------------------------------------------
+Function putMonthsSelect
+displays a select list with the months of the year, with todays month 
+initially selected. The name of the select list is entered, and [month]
+is added to make it part of a date array [month],[day],[year]
+	varName - name of the select variable
+-------------------------------------------------------------------*/
+Function putMonthsSelect($varName){
+
+	echo "<select name=\"$varName";
+	if ($varName != "month"){
+		echo "[month]";
+	}
+	echo "\">\r";
+
+	$arDate = getdate();
+	$numMonth = $arDate['mon'];  //puts todays month numeric as the month
+	$nameMonth = $arDate['month'];
+	for($i=1; $i<=12; ++$i){
+		if ($i == $numMonth) {
+			echo "<option value=\"$i\" selected>";
+		} else {
+			echo "<option value=\"$i\">";
+		}
+
+		echo date ("M", mktime (0,0,0,$i,2,0));
+		echo "</option>\r";
+	}
+	echo "</select>";
+}
+
+/*-------------------------------------------------------------------
+Function putMonthsSelect
+displays a select list with the months of the year, with todays month 
+initially selected. The name of the select list is entered, and [month]
+is added to make it part of a date array [month],[day],[year]
+	varName - name of the select variable
+-------------------------------------------------------------------*/
+Function putYearsSelect($varName){
+	echo "<select name=\"$varName";
+	if ($varName != "year"){
+		echo "[year]";
+	}
+	echo "\">\r";
+	
+	$arDate = getdate();
+	$thisyear = $arDate['year'];
+	$startyear = $thisyear - 100;
+	$endyear = $thisyear + 20;
+	
+	for($i = $startyear; $i <= $endyear; ++$i){
+		if ($i == $thisyear) {
+			echo "<option selected>";
+		} else {
+			echo "<option>";
+		}
+		echo $i;
+		echo "</option>\r";
+	}
+	echo "</select>";
+}
+	
+
+	
+
+
+
+
+
+/*-------------------------------------------------------------------
+ INSERTS CheckBoxes INTO A TABLE
+	disName - printed name
+	varName - name of field array
+	disArray - [key array key, value is displayed name]
+	varSelecteds - String with Values that should be initially selected.
+	intRowLen - number of Boxes before <br>
+	strComments - instructions for the field
+-------------------------------------------------------------------*/
+
+Function putCheckBoxesInput($disName, $varName, $disArray, $strSelecteds, $intRowLen, $strComment, $special) {
+?>
+<tr>
+	<td>
+	  <div align="right" valign="top">
+	  <? echo $disName;
+	  if(preg_match("/required/",$special)){
+	  	echo "<font color=\"#FF0000\">*</font>";
+	  }
+	  if(!(isEmpty($strComment))){
+	  	echo "<BR><font size=\"2\">($strComment)</font>";
+	  }
+?>
+
+	  </div>
+	</td>
+	<td>
+<?php
+	echo "<HR>";
+        $linebreak = '';
+	while(list($key, $field)= each($disArray)){
+		echo "$linebreak <input type=\"checkbox\" name=\"$varName" . "[]\" value=\"$key\"";
+
+		// if the value is in varSelected, it chould be selected
+//echo "strselecet   $strSelecteds<BR>key   $key<BR>";
+		if(stristr("$strSelecteds","$key")){
+			echo " checked";
+		}
+		echo">&nbsp;$field";
+                $i = null;
+		if($i++ % $intRowLen == 0){
+			$linebreak = "<BR>\n";
+		} else {
+			$linebreak = "&nbsp;&nbsp;&nbsp;";
+		}
+
+	}
+?> &nbsp;
+	<HR>
+	</td>
+</tr>
+
+<?php
+}
+// end function
+
+
+
+
+
+
+
+
+/*-------------------------------------------------------------------
+getEmptyFields: checks the array $arFields and ensures all fields
+	specified by $arMandKeys are not empty.  The keys for empty
+	fields are stored and returned in the string $missing
+INPUTS $arFields
+		$arMandKeys
+OUTPUTS	$missing
+ASSUMES	ConvertFromNull() is accessable
+-------------------------------------------------------------------*/
+
+
+function getEmptyFields ($arFields, $arMandKeys){
+	$missing = "";
+
+/*	loop through array of manditory keys
+	check $arFields[$key] to ensure it isn't empty
+	if $arFields[$key] is empty, add $key to $missing
+*/
+
+//loop through $arMandKeys
+	while (list($key,$value) = each($arMandKeys)){
+
+		if(IsEmpty($arFields[$value])){
+			$missing = $missing . "$value, ";
+		} //if
+	}  //while
+
+	if (!(IsEmpty($missing))){
+		$missing = substr($missing, 0, -2);
+	}
+
+	return $missing;
+
+}	//end of function
+
+/*-------------------------------------------------------------------
+getEmptyFields2D: like getEmptyFields except arMandKeys has the variable name
+	while the value is the Display name of the field
+INPUTS $HTTP_POST_VARS- all of the posted fields,
+	$arMandKeys- the fields that must have inputs
+OUTPUTS	$missing
+ASSUMES	ConvertFromNull() is accessable
+-------------------------------------------------------------------*/
+
+
+function getEmptyFields2D ($arFields, $arMandKeys){
+	$missing = "";
+
+/*	loop through array of manditory keys
+	check $arFields[$key] to ensure it isn't empty
+	if $arFields[$key] is empty, add $Value to $missing
+*/
+
+//loop through $arMandKeys
+	while (list($key,$value) = each($arMandKeys)){
+//echo "<font color=\"#333333\">";
+//echo " $key,  $value  $arFields[$key]";
+		if(IsEmpty($arFields[$key])){
+			$missing = $missing . "$value, ";
+//			echo "   $missing";
+		} //if
+//		echo "<br>";
+	}  //while
+
+	if (!(IsEmpty($missing))){
+		$missing = substr($missing, 0, -2);
+	}
+//echo "</font>";
+	return $missing;
+
+}	//end of function
+
+
+
+
+/*-------------------------------------------------------------------
+Purpose: Newly Created To provide an event on click of a checkbox
+ INSERTS Check Box  INTO A TABLE
+	disName - printed name
+	varName - name of field
+	varChecked - is boxed checked variable is either "checked" or blank, and is echoed regardless
+	disLabel - instructions for the field
+-------------------------------------------------------------------*/
+
+Function putCheckBoxInputEvent($disName, $varName, $varChecked, $varEvent) {
+?>
+   <tr>
+	<td>&nbsp;</td>
+	 <td>
+		<input type="checkbox" name="<? echo $varName; ?>" value="checked" <? echo $varChecked; ?> onclick="<? echo $varEvent; ?>">&nbsp;&nbsp;
+		<?echo $disName ?>	
+	</td>
+   </tr>
+<? }
+// END FUNCTION
+
+
+/*-------------------------------------------------------------------
+Purpose: Newly Created To provide with a tr with an id (Generally Used with show/hide js feature)
+ INSERTS SELECT INPUT INTO A TABLE
+	disName - printed name
+	varName - name of field
+	disArray - display values [key displayed, value is value]
+	varSelected - Passed Value that should be initially selected.  not the displayed value
+	disComments - instructions for the field
+-------------------------------------------------------------------*/
+
+Function putSelectInputShow($disName, $varName, $disArray, $varSelected, $strComment, $special, $labelFirst ='', $show) {
+?>
+   <tr id="<?php echo $show;?>" style="visibility:hidden;">
+	<td   valign="top">
+	  <div align="right">
+<? 	  echo $disName;
+	  if(preg_match("/required/",$special)){
+	  	echo "<font color=\"#FF0000\">*</font>";
+	  }
+
+?>
+
+	  </div>
+	</td>
+     <td>
+
+        <select name="<? echo $varName; ?>">
+ 		<option value=""
+<? 		If (!(isset($varSelected))){
+			echo "selected";
+		}
+	echo ">$labelFirst</option>";
+
+		while (list ($key, $val) = each ($disArray)) {
+			echo "<option value=\"$key\"";
+			If ($varSelected == $val){
+				echo " selected ";
+			}
+			echo ">$val </option> \r";
+		}
+		echo "</select> $strComment</td></tr>";
+}
+// END FUNCTION
+
+/* -------------------------------------------------------------------
+Purpose: Newly Created To provide with a tr with an id (Generally Used with show/hide js feature)
+INSERTS TEXT INPUT INTO A TABLE
+	disName - printed name
+	varName - name of field
+	varLen - length of text field
+	disLen - size of text box
+	varVal - value of text field
+	strComment - instructions for the field
+	special - wildcar for required, currency, etc....
+-------------------------------------------------------------------	*/
+Function putTextFieldShow($disName, $varName, $varLen, $disLen, $varVal, $strComment, $special,$show) {
+if(isEmpty($varLen)){
+	$varLen = 50;
+}	
+?>
+
+<tr valign="middle" id="<?php echo $show;?>" style="visibility:hidden;padding-bottom:10px;">
+	<td>
+	  <div align="right" valign="middle">
+	  <? echo $disName;
+	  if(preg_match("/required/",$special)){
+	  	echo "<font color=\"#FF0000\">*</font>";
+	  }
+	  	if(!(isEmpty($strComment))){
+		
+		echo "<span class=\"form_comments\"> <br>$strComment </span>";
+	}	
+
+	  ?>
+
+	  </div>
+	</td>
+	<td>
+<?
+	if(preg_match("/currency/",$special)){
+		echo "$";
+	}
+	echo "<input type=\"text\" name=\"$varName\" size=\"$disLen\" maxlength=\"$varLen\" value=\"$varVal\"> ";
+?>
+	</td>
+   </tr>
+<? }
+//END FUNCTION
+
+
+/*-------------------------------------------------------------------
+Purpose: Newly Created To provide an event on selection (Generally Used with show/hide js feature)
+ INSERTS SELECT INPUT INTO A TABLE
+	disName - printed name
+	varName - name of field
+	disArray - display values [key displayed, value is value]
+	varSelected - Passed Value that should be initially selected.  not the displayed value
+	disComments - instructions for the field
+-------------------------------------------------------------------*/
+
+Function putSelectInputOnChange($disName, $varName, $disArray, $varSelected, $strComment, $special, $labelFirst ='',$event) {
+?>
+   <tr>
+	<td   valign="top">
+	  <div align="right">
+<? 	  echo $disName;
+	  if(preg_match("/required/",$special)){
+	  	echo "<font color=\"#FF0000\">*</font>";
+	  }
+
+?>
+
+	  </div>
+	</td>
+     <td>
+
+        <select name="<? echo $varName; ?>" id="<? echo $varName; ?>" <?php echo $event ?>>
+ 		<option value=""
+<? 		If (!(isset($varSelected))){
+			echo "selected";
+		}
+	echo ">$labelFirst</option>";
+
+		while (list ($key, $val) = each ($disArray)) {
+			echo "<option value=\"$key\"";
+			If ($varSelected == $val){
+				echo " selected ";
+			}
+			echo ">$val </option> \r";
+		}
+		echo "</select> $strComment</td></tr>\r";
+}
+// END FUNCTION
+?>

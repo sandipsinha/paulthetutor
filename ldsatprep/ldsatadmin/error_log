@@ -1,0 +1,6 @@
+[07-Apr-2011 18:24:50] PHP Warning:  Variable passed to each() is not an array or object in /home/paulth40/public_html/Paul13ToolBox/FormFunctions.phtml on line 230
+[16-Jul-2011 14:26:23] PHP Parse error:  syntax error, unexpected ',', expecting '&' or T_VARIABLE in /home/paulth40/public_html/Paul13ToolBox/FormFunctions.phtml on line 213
+[16-Jul-2011 14:27:52] PHP Parse error:  syntax error, unexpected ')' in /home/paulth40/public_html/Paul13ToolBox/FormFunctions.phtml on line 218
+[16-Jul-2011 16:29:49] PHP Parse error:  syntax error, unexpected ';' in /home/paulth40/public_html/paulthetutors_com/ldsatprep/ldsatadmin/gethwsum.php on line 57
+[16-Jul-2011 16:30:10] PHP Warning:  mysql_fetch_array(): supplied argument is not a valid MySQL result resource in /home/paulth40/public_html/Paul13ToolBox/FormFunctions.phtml on line 215
+[16-Jul-2011 16:30:10] PHP Warning:  Variable passed to each() is not an array or object in /home/paulth40/public_html/Paul13ToolBox/FormFunctions.phtml on line 255

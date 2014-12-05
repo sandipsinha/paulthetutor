@@ -1,0 +1,58 @@
+/******** FORM **********/
+
+form
+{
+	font-size:12px;
+}
+
+button
+{
+	font-size:12px !important;
+}
+
+fieldset ol {  
+padding: 4px 4px 0 4px;  
+list-style: none;  
+}  
+
+
+label {    
+float: left;    
+width: 6em;    
+margin-right: 1em;  
+}
+
+fieldset.submit {    
+float: none;    
+width: auto;    
+border: 0 none #FFF;    
+padding-left: 12em;  
+}
+
+fieldset {    
+float: left;    
+clear: left;    
+width: 100%;    
+margin: 0 0 1.5em 0;    
+padding: 0;  
+}
+
+fieldset li {    
+float: left;    
+clear: left;    
+width: 100%;    
+padding-bottom: 0.5em;  
+}
+
+.small
+{
+	width:50px;
+}
+
+button.edit
+{
+	background:url("../includes/images/blue_button.png") repeat-x scroll 50% 50% #0078AE;
+	color:white;
+}
+
+/*******END FORM ******/

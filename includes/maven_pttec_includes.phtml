@@ -1,0 +1,1148 @@
+<?
+$strAbsPath = "/home/paulthetutor/paulthetutors.com";
+include_once("config.php");
+
+// Set up ZF
+ set_include_path(get_include_path() . PATH_SEPARATOR . $strAbsPath. '/includes/library');
+ date_default_timezone_set('America/Los_Angeles'); // server probably defaults to UTC
+ include_once 'library/Zend/Loader.php';
+ require_once $strAbsPath.'/includes/library/Zend/Loader.php';
+ require_once $strAbsPath.'/includes/library/Zend/Mail.php';
+// End ZF setup
+
+include("phtml_files/PTTIncludes.phtml");
+include("phtml_files/webbit_includes.phtml");
+include("phtml_files/vworker_includes.phtml");
+#include_once($strAbsPath . "/includes/gc_updater.php");
+include("php_files/google.php");
+include("phtml_files/MySQL_functions.phtml");
+include("phtml_files/Paul13Includes.phtml");
+include("phtml_files/FormFunctions.phtml");
+
+
+
+$strAbsImgPath = "/images/";
+
+/**********************************************************
+Function List
+23 - gettutBillInfo_2010 (get's the billing info for a tutor)
+258 - client_tut_del (deletes a session )
+274 - session_del (deletes a session using just the session id )
+280 - session_add ( add a tutoring session )
+316 - tutor_info($tut_id) - given a tutors id, returns an array with all of the tutor's information
+385 - link - puts the top links for folders
+580 - get_tut_info($tutor_id) identical to tutor_info OOPS!
+640 - tutorsid_menu($selected_value, $name="tid",$callback) puts a menu for tutors
+670 -  get student info functions
+670 - fam_menu($style, $inputname, $fam_id, $label, $other) - create a pull down menu for selecting a family
+712 - put_fam_menu($style="student", $inputname="fid", $fam_id=0, $label="", $other="")
+  this actually puts the menu on the page
+	- class_menu
+725 -  reqToVars() - takes all of the request variables and makes them global variables
+735 - gettutBillInfo (calls gettutBillInfo2010 or gettutBillInfo2011 depending on the year)
+750 - gettutBillInfo_2011 (get's the billing info for 2011 and beyond.)
+753 - tableview (shows all of the selected column in a table, sortable by clicking title, and with action column)
+948 - get_strNotUsed (gets the values not to put in the autotables from PT_Table_Info)
+963 - get_test_type_info (gets the information about a type of test SAT, ACT, HSPT, etc...)
+1001 - ptts2_mail (for now simply takes calls "mail")
+
+**********************************************************/
+
+/*-------------------------------------------------------------------*/
+/* gets the array with a students billing information for a month    */
+/* returns a array with arBillInfo[date,rate,hours,special,comments] */
+/*-------------------------------------------------------------------*/
+
+///get the schedule for the students: day of week, hours and rate
+Function gettutBillInfo_2010($month, $year, $sid, $tid, $other) {
+return NULL;
+  $first_of_month = "$year/$month/1";
+  if($month <12){
+    $next_month = $month + 1;
+    $first_of_nextmonth = "$year/$next_month/1";
+  } else {
+    $next_year = $year + 1;
+    $first_of_nextmonth = "$next_year/1/1";
+  }  
+  $i = 0;
+    $QStr ="select a.*, t.first_name as t_first_name , t.last_name as t_last_name  from PTSchedInfo a LEFT JOIN PT_Tutors t ON a.tid = t.id where(start_date < '$first_of_nextmonth' and end_date >= '$first_of_month') and (a.sid = $sid)  ".($tid ? "and a.tid = $tid" : "");
+  if(!($SchedInfoRS = mysql_query($QStr))){
+    echo "$QStr <br>" . mysql_error();
+  }
+
+// first set up the schedule each scheduled day of the week assuming everything is normal
+  while($arSI = mysql_fetch_array($SchedInfoRS)){
+    $tempday=0;
+    $arStartDate = explode("-", $arSI['start_date']);
+    $arEndDate = explode("-", $arSI['end_date']);
+
+//find the date the first day of the week of the month
+$lastofmonth = date("t", mktime (0,0,0,$month,11,$year));
+    do {
+      $tempday = $tempday + 1;
+      if($tempday == $lastofmonth){
+        break;
+      }  
+      if(mktime(0,0,0,$month,$tempday,$year) > mktime(0,0,0,$arEndDate[1],$arEndDate[2],$arEndDate[0])){
+        break;
+      }  
+    } while((date("l", mktime(0,0,0,$month,$tempday,$year)) <> $arSI['dow']) or (mktime(0,0,0,$month,$tempday,$year) < mktime(0,0,0,$arStartDate[1],$arStartDate[2],$arStartDate[0])));
+
+//echo "dow is $arSI[dow]<BR>";
+//echo "tempdate is $tempday<BR>";
+//echo "mktime(0,0,0,$arStartDate[1],$arStartDate[2],$arStartDate[0])";
+
+  if(date("l", mktime (0,0,0,$month,$tempday,$year)) == $arSI['dow']){ //if we didn't find any day that works, don't add anything to the array
+    do {
+// printarray($arSI);
+      $printday = date("d", mktime (0,0,0,$month,$tempday,$year));
+      $arBillInfo[$printday]['numday'] = $tempday;
+      $arBillInfo[$printday]['date'] = date("dS \of M", mktime (0,0,0,$month,$tempday,$year));
+      $arBillInfo[$printday]['hours'] = $arSI['hours'];
+      $arBillInfo[$printday]['rate'] = $arSI['rate'];
+      $arBillInfo[$printday]['pay'] = $arSI['pay'];
+      $arBillInfo[$printday]['start_time'] = $arSI['start_time'];
+      $arBillInfo[$printday]['special'] = "&nbsp;";
+      $arBillInfo[$printday]['comments'] = "&nbsp;";
+      $arBillInfo[$printday]['tid'] = $arSI['tid'];
+      $arBillInfo[$printday]['t_name'] = $arSI['t_first_name']." ".strtoupper(substr($arSI['t_last_name'],0,1));
+      $tempday = $tempday + 7;
+    } while(date("n", mktime (0,0,0,$month,$tempday,$year)) == $month and (mktime(0,0,0,$month,$tempday,$year) <= mktime(0,0,0,$arEndDate[1],$arEndDate[2],$arEndDate[0])) );
+  $useRate = $arSI['rate'];
+  $useHours = $arSI['hours'];
+
+  } //end if that ensure that the first date found is a usable date.  
+
+} // end of basic schedule set up
+
+// remove schedules from vacation days
+  $QStr = "select id, start_date, end_date from PTVacations where start_date < '$first_of_nextmonth' and end_date >= '$first_of_month' ".($tid ? "and tid = $tid" : "");
+  if(!($VacRS = mysql_query($QStr))){
+    echo "$QStr <br>" . mysql_error();
+  }
+   while($arVac = mysql_fetch_array($VacRS)){
+    $arStartDate = explode("-", $arVac['start_date']);
+    $arEndDate = explode("-", $arVac['end_date']);
+                //if the vacation started before the start of this month, start vacation on the first day of this month
+    if (mktime(0,0,0,$month,1,$year) > mktime(0,0,0,$arStartDate[1],$arStartDate[2],$arStartDate[0])) {
+//      echo "use first of month for $arVac[start_date] <BR>";
+      $tempdate = 01;
+    } else { 
+//      echo "use Vacation's start date for $arVac[start_date]<BR>";
+      $tempdate = $arStartDate[2];
+    }
+//    echo "mktime(0,0,0,$month,1,$year)   and   mktime(0,0,0,$arStartDate[1],$arStartDate[2],$arStartDate[0])  <BR><BR>";
+
+// get the last day of the month
+$last_day_month = date('j',mktime(0, 0, 0, $month+1, 0, $year));  
+
+//clear the dates of the vacation    
+    do {
+      unset($arBillInfo[$tempdate]);
+      unset($arBillInfo["0" . $tempdate]);
+      $tempdate = $tempdate +1;
+    } while (($tempdate <= $last_day_month) and (mktime(0,0,0,$month,$tempdate,$year) <= mktime(0,0,0,$arEndDate[1],$arEndDate[2],$arEndDate[0])));
+  } //end while we have vacations to remove
+// end removed vacation days        
+
+// get the missed appointments.  These are the appointments that are not billed for
+$QStr = "select date from PTMissedApp where month(date) = $month and year(date) = $year and (sid = $sid or sid = 0) ".($tid ? "and tid = $tid" : "");
+    if(!($MARS = mysql_query($QStr))){
+      echo "$QStr <br>" . mysql_error();
+    }
+
+    $QStr ="select a.*, t.first_name as t_first_name , t.last_name as t_last_name  from PTChangedApp a LEFT JOIN PT_Tutors t ON a.tid = t.id where year(a.date) = $year and month(a.date) = $month and (a.sid = $sid)  ".($tid ? "and a.tid = $tid" : "");
+//  echo "changed qstr is $QStr <BR><BR><BR>";
+    if(!($ChARS = mysql_query($QStr))){
+      echo "$QStr <br>" . mysql_error();
+    }
+
+// printRS($ChARS);
+    while($arChA = mysql_fetch_array($ChARS)){
+      $arDate = explode("-", $arChA[date]);
+      $printday = $arDate[2];
+  // ensure that changes are being made to a date that tutor worked
+      if(isset($arBillInfo[$printday]['hours'])){
+  // put the date into the array
+        $arBillInfo[$printday][date] = date("dS \of M", mktime (0,0,0,$arDate[1],$arDate[2],$arDate[0]));
+  // add the comments if they are set
+        if(!(isEmpty($arChA['comments']))){
+          $arBillInfo[$printday]['comments'] = $arChA['comments'];
+        }
+  // put the special in, and make other appropriate changes
+        if(!(isEmpty($arChA['special']))){
+  // make sure that we $arChA[special] = trim($arChA[special])
+        $arBillInfo[$printday]['special'] = $arChA['special'];
+        switch($arChA['special']){
+          case "late cancelation":
+            $arBillInfo[$printday]['rate'] = $arBillInfo[$printday]['rate'] / 2;
+            if((!(isEmpty($arChA['hours']))) and $arChA['hours'] > 0){
+              $arBillInfo[$printday]['hours'] = $arChA['hours'];
+            }
+            break;
+
+          case "changed hours":
+            $arBillInfo[$printday]['hours'] = $arChA['hours'];
+            $arChA['special'] = "";
+            break;
+
+          case "special rate":
+            $arChA['special'] = "";
+            $arBillInfo[$printday]['rate'] = $arChA['rate'];
+            break;
+
+          case "rescheduling fee":
+            $arBillInfo[$printday]['hours'] = 1;
+            $arBillInfo[$printday]['rate'] = 10;
+            break;
+
+          case "cancelation no charge":
+            $arBillInfo[$printday]['rate'] = 0;
+            break;
+
+        }//  switch
+        } // is special is set
+      } // if
+    }    // while appointments to change
+// end of changed appointments
+
+// get the added appts
+  $QStr = "select a.*, t.first_name as t_first_name , t.last_name as t_last_name  from PTAddedApp a LEFT JOIN PT_Tutors t ON a.tid = t.id where year(a.date) = $year and month(a.date) = $month and (a.sid = $sid)  ".($tid ? "and a.tid = $tid" : "");
+  if(!($AdARS = mysql_query($QStr))){
+    echo "$QStr <br>" . mysql_error();
+  }
+  while($arAdA = mysql_fetch_array($AdARS)){
+    $arDate = explode("-", $arAdA[date]);
+    $printday = $arDate[2];
+    $arBillInfo[$printday][date] = date("dS \of M", mktime (0,0,0,$arDate[1],$arDate[2],$arDate[0]));
+    $arBillInfo[$printday]['special'] = "&nbsp;";
+    $arBillInfo[$printday]['comments'] = $arAdA['comments'];
+    $arBillInfo[$printday]['start_time'] = $arAdA['start_time'];
+    $arBillInfo[$printday]['id'] = $arAdA['id'];
+    $arBillInfo[$printday]['tid'] = $arAdA['tid'];
+    $arBillInfo[$printday]['t_name'] = $arAdA['t_first_name']." ".strtoupper(substr($arAdA['t_last_name'],0,1));
+    $arBillInfo[$printday]['pay'] = $arAdA['pay'];
+
+// if the rate is not put, use the standard rate
+    if(($arAdA['rate'] > 0) and $arAdA['rate'] <> null){
+      $arBillInfo[$printday]['rate'] = $arAdA['rate'];
+    } else {
+      $arBillInfo[$printday]['rate'] = $useRate;
+    }
+
+//if the hours are left blank, insert the normal hours
+    if(($arAdA['hours'] > 0) and $arAdA['hours'] <> null){
+      $arBillInfo[$printday]['hours'] = $arAdA['hours'];
+    } else {
+      $arBillInfo[$printday]['hours'] = $useHours;
+    }
+  } // end of added appointments
+
+    // remove missed appointments from arBillInfo
+    while($arDates = mysql_fetch_array($MARS)){
+      $arDate = explode("-", $arDates[date]);
+      $printday = $arDate[2];
+      unset($arBillInfo[$printday]);
+    }
+
+if(isset($arBillInfo)){  // if there is an array, sort it
+  ksort($arBillInfo);
+}
+return $arBillInfo;
+} //END FUNCTION 
+
+
+/**************************************************
+ deletes a session based on the session id
+ ***************************************************/
+function session_del($ses_id, $opts=null, $compat=null){
+        !!$compat && $opts = $compat;
+  $query = "select * from PTAddedApp where id = $ses_id";  
+  $res = runquery($query);
+  $row = mysql_fetch_array($res);
+  /**************delete from google calendar**********************/
+  // get the tutors information  
+  set_time_limit(0);
+  $tar = get_tut_info($row['tid']);
+  $student_info = get_student_info($row['sid']);
+  $gc_name = $tar['gc_name']; //name of the calendar
+  $gc_token=gc_login(); // set up gcal object 
+  $fam_name = get_fam_name($row['sid']);  
+     del_goog_cal($gc_token, $row['date'], $row['start_time'], $row['hours'], $fam_name,null,$gc_name);
+     set_time_limit(60);
+  /**************end delete from google calendar**********************/
+  $DQstr = "delete from PTAddedApp where id = $ses_id";
+  $DRS = runquery($DQstr);
+  $DQstr = "delete from PTAddedApp2 where id = $ses_id";
+  $DRS = runquery($DQstr);
+  $tut_name = $tar['first_name'];
+        $add_date = $row['date'];
+        $start_time = explode(":", $row['start_time']);
+        $start_time = $start_time[0] . ":" . $start_time[1];
+        $hours = $row['hours'];
+        $rate = $rot['rate'];
+  $msgtotut = "appointment with ". $student_info['full_name'] . " deleted on $add_date at $start_time for $hours hours of tutoring with $tut_name";
+        $adminmsg = "Del ". $student_info['full_name'] ." w/ $tut_name ".date("d/n", strtotime($add_date))."@$start_time ($hours) $rate/$pay";
+        if(!(isset($opts['email_paul']) && !$opts['email_paul'])) // default to sending email
+          mail_alert('paul@paulthetutors.com', $adminmsg , $adminmsg, 'del');
+        if(!(isset($opts['email_tut']) && !$opts['email_tut'])) // default to sending email
+          mail_alert($tar['email'], $msgtotut, $msgtotut, 'del');
+        return $msgtopaul;
+} //session_del
+
+/**************************************************
+ Deal with deleted appointments with a tutor id
+ ***************************************************/
+function client_tut_del($del_date, $del_fid,$tid,$other) {
+  $tinfo = tutor_info($tid);
+  $MQStr = "INSERT INTO PTMissedApp (sid, date,tid) VALUES ('$del_fid', '$del_date',$tid)";
+  $MRS = runquery($MQStr);
+  $query = "select * from PTAddedApp where sid = '$del_fid' and date = '$del_date' and tid = $tid";
+  $res = runquery($query);
+  $row = mysql_fetch_array($res);
+  session_del($row[id]);
+  $snames = getstudentsname($del_fid);
+  $tlast2 = substr($tinfo['last_name'], 0, 2);
+  $tname = $tinfo['first_name'] . " " . $tlast2;
+  $msgtotut = "$snames cancelled appointment on $del_date with $tname";
+  $temail = $tinfo['email'];
+        $adminmsg = "Del $snames w/ $tname ".date("d/n", strtotime($add_date))."@$start_time ($hours) $rate/$pay";
+  mail_alert($temail, $msgtotut, $msgtotut, 'del');
+  mail_alert('paul@paulthetutors.com', $adminmsg , $adminmsg, 'del');
+  return "Removed the event on $del_date at $start_time.";
+}
+
+/***********************************************************************
+funtion session_add
+input - tutor's id number
+returns - array with all of the tutor's information
+************************************************************************/
+function session_add2($add_date, $start_time, $add_fid, $hours, $rate, $pay, $tid, $contact, $student_id, $name='', $sched_id='',$comments='',$opts=null) {
+
+
+
+  return session_add($add_date, $start_time, $add_fid, $hours, $rate, $pay, $tid, $name, $sched_id,$comments, $opts, $student_id);
+}  
+
+/***********************************************************************
+funtion session_add
+input - tutor's id number
+returns - array with all of the tutor's information
+************************************************************************/
+function session_add($add_date, $start_time, $family_id, $hours, $rate, $pay, $tid, $name='', $sched_id='',$comments = '', $opts=NULL, $student_id='') {
+  if(isEmpty($tid)) {
+    $tid = 1;
+  }
+  $start_time = $start_time;
+  if(isEmpty($hours)){
+    $hours = 1;
+  }  
+if(isEmpty($student_id)){
+  	$student_id = singlequery("select id from PTStudentInfo_New where fid = $family_id LIMIT 1");
+}
+
+if(isEmpty($family_id)){
+	$family_id = singlequery("select fid from PTStudentInfo_New where id = $student_id");
+}	
+
+$name = get_student_name($student_id);
+  
+  $AQStr = "INSERT INTO PTAddedApp (sid, family_id, student_id, date, hours, rate, start_time, pay, tid, name, sched_id,comments) VALUES ('$family_id','$family_id','$student_id', '$add_date', '$hours', '$rate', '$start_time', '$pay', $tid, '".addslashes($name)."', '$sched_id','$comments')";
+  $ARS = runquery($AQStr);
+
+// put the google calendar functions
+  $tar = get_tut_info($tid);
+
+  $start_time = explode(":", $start_time);
+  $start_time = $start_time[0] . ":" . $start_time[1];
+// get the tutors information  
+  set_time_limit(0);
+  $gc_name = $tar['gc_name']; //name of the calendar
+  $tut_email = $tar['email'];
+  $tut_name = $tar['first_name'];
+//  if (!$GLOBALS['x_conf_cal_token'])
+    $gc_token=gc_login(); // get's login info
+// get family name
+  $fam_name = get_fam_name($family_id);  
+// add the informatoin to the google calendar  
+// #echo "<br><br>".__FILE__.":".__LINE__."add_goog_cal($gc_token, '$add_date', '$start_time', $hours, $fam_name,null,$gc_name)<BR><BR>";
+//   add_goog_cal($gc_token, $add_date, $start_time.":00", $hours, $fam_name,null,$gc_name);
+   set_time_limit(10);
+
+//send an email
+  $snames = getstudentsname($family_id);
+  $msgtopaul = "$fam_name added an appointment on $add_date at $start_time for $hours hours of tutoring with $tut_name";
+        $adminmsg = "Add $snames w/ $tut_name ".date("d/n", strtotime($add_date))."@$start_time ($hours) $rate/$pay";
+        if(!(isset($opts['email_paul']) && !$opts['email_paul'])) // default to sending email
+          mail_alert('paul@paulthetutors.com', $adminmsg , $adminmsg, 'add');
+        if(!(isset($opts['email_tut']) && !$opts['email_tut'])) // default to sending email
+          mail_alert($tut_email, $msgtopaul, $msgtopaul, 'add');
+  return $msgtopaul;
+}
+
+/***********************************************************************
+funtion tutor_info
+input - tutor's id number
+returns - array with all of the tutor's information
+***********************************************************************/
+function tutor_info($tutor_id){
+  $TQStr = "select * from PT_Tutors where id = $tutor_id";
+// echo "test tut info $TQStr<BR>";
+  $TRS = runquery($TQStr);
+  $Tar = mysql_fetch_array($TRS);
+  return $Tar;
+}
+
+/***********************************************************************
+funtion get_top_links
+***********************************************************************/
+
+function get_top_links($folder){
+switch ($folder) {
+    case "admin":
+        $links[1][0] = FULL_BASE_PATH."/admin/index.php";
+    $links[1][1] = "Admin Home";
+        $links[2][0] = FULL_BASE_PATH."/admin/calendar_action.php";
+    $links[2][1] = "Calendar";
+    $links[3][0] = FULL_BASE_PATH."/admin/billing.php";
+    $links[3][1] = "Accounting";
+        $links[4][0] = FULL_BASE_PATH."/admin/showbills_new.php";
+    $links[4][1] = "Show Bills";
+        $links[5][0] = FULL_BASE_PATH."/admin/sendbills_new.php";
+    $links[5][1] = "Send Bills";
+        $links[6][0] = FULL_BASE_PATH."/admin/families.php";
+    $links[6][1] = "Families";
+        $links[7][0] = FULL_BASE_PATH."/admin/tutorsinfo.php";
+    $links[7][1] = "Tutors";
+    $links[8][0] = FULL_BASE_PATH;
+    $links[8][1] = "Paul the Tutor's";
+        break;
+
+    case "parents":
+        $links[1][0] = FULL_BASE_PATH.$folder."/index.php";
+    $links[1][1] = "Paul the Tutor's";
+        $links[2][0] = FULL_BASE_PATH."/parents";
+    $links[2][1] = "Parent's Home";
+        $links[3][0] = FULL_BASE_PATH."/parents/viewbill.php";
+    $links[3][1] = "Accounting";
+        $links[4][0] = FULL_BASE_PATH."/parents/edit_info_full.php";
+    $links[4][1] = "Edit Information";
+        $links[5][0] = "tutorsinfo.php";
+    $links[5][1] = "Tutor's Info";
+        $links[6][0] = FULL_BASE_PATH."/parents/login_parents.php?logout=1";
+    $links[6][1] = "Log Out";
+        $links[7][0] = FULL_BASE_PATH."/contact.php";
+    $links[7][1] = "Book a Session";
+        $links[8][0] = FULL_BASE_PATH."/contact.php";
+    $links[8][1] = "Contact Us";
+        break;
+
+    case "tutors":
+        $links[1][0] = FULL_BASE_PATH."/tutors/index_tutors.php";
+    $links[1][1] = "Tutors' Home";
+        $links[2][0] = FULL_BASE_PATH."/tutors/calendar_action.php";
+    $links[2][1] = "Calendar";
+        $links[3][0] = FULL_BASE_PATH."/tutors/show_bills.php";
+    $links[3][1] = "Month's Sessions";
+        $links[4][0] = FULL_BASE_PATH."/tutors/tutedit01.php";
+    $links[4][1] = "Edit Profile";
+        $links[7][0] = FULL_BASE_PATH."/tutors/tutlogin.php?logout=1";
+    $links[7][1] = "Log Out";
+        $links[5][0] = FULL_BASE_PATH."/tutors/schedules.php";
+    $links[5][1] = "Schedules";
+        $links[6][0] = FULL_BASE_PATH."/tutors/work_hours_list.php";
+    $links[6][1] = "Non-tutoring";
+        $links[8][0] = FULL_BASE_PATH."/contact.php";
+    $links[8][1] = "Contact Us";
+        break;
+        
+    case "ldsatadmin":
+        $links[1][0] = "index.php";
+        $links[1][1] = "Ldsat Admin";
+        $links[2][0] = "ldsathw.php";
+        $links[2][1] = "Homework";
+        $links[3][0] = "gettestinfo.php";
+        $links[3][1] = "Tests";
+        $links[4][0] = "getsectionsinfo01.php";
+        $links[4][1] = "Sections";
+        $links[5][0] = "getcorrectans01.php";
+        $links[5][1] = "Answers";
+        $links[6][0] = "testresults.php";
+        $links[6][1] = "Test results";
+        $links[7][0] = "homeworkresults.php";
+        $links[7][1] = "HW Results";
+        $links[8][0] = "http://www.paulthetutors.com/contact.php";
+        $links[8][1] = "Contact Us";
+        break;
+        
+    case "students":
+        $links[1][0] = FULL_BASE_PATH."/index.php";
+        $links[1][1] = "Paul the Tutor's";
+        $links[2][0] = "index.php";
+        $links[2][1] = "My Homepage";
+        $links[3][0] = "hwgrader01.php";
+        $links[3][1] = "Enter Homework";
+        $links[4][0] = "satgrader.php";
+        $links[4][1] = "Take Test";
+        $links[5][0] = "satscorereporter.php";
+        $links[5][1] = "Test Results";
+        $links[6][0] = FULL_BASE_PATH."/contact.php";
+        $links[6][1] = "Book a Session";
+        $links[7][0] = FULL_BASE_PATH."/contact.php";
+        $links[7][1] = "Contact Us";
+        $links[8][0] = "login.php?logout=1";
+        $links[8][1] = "Log Out";
+        break;
+        
+    default:
+        $links[1][0] = FULL_BASE_PATH."/index.php";
+  $links[1][1] = "Home";
+        $links[2][0] = FULL_BASE_PATH."/services.php";
+  $links[2][1] = "Services";
+  if (stristr($_SERVER['PHP_SELF'], "index")){
+           $links[5][0] = FULL_BASE_PATH."/faq.php";
+    $links[5][1] = "FAQ";
+  }else{
+    $links[5][0] = FULL_BASE_PATH."/aboutus.php";
+    $links[5][1] = "About Us";
+  }
+        $links[3][0] = FULL_BASE_PATH."/newparents.php";
+  $links[3][1] = "Parents";
+        $links[4][0] = FULL_BASE_PATH."/distance.php";
+  $links[4][1] = "Distance";
+        $links[6][0] = FULL_BASE_PATH."/login.php";
+  $links[6][1] = "Login";
+        $links[7][0] = FULL_BASE_PATH."/contact.php";
+  $links[7][1] = "Book a Session";
+        $links[8][0] = FULL_BASE_PATH."/contact.php";
+  $links[8][1] = "Contact Us";
+   }  
+
+  return($links);
+}
+
+/***********************************************************************
+funtion put header for paulthetutors.com
+***********************************************************************/
+function put_ptts_header($page_title, $strAbsPath, $folder, $other2){
+  global $strAbsPath;
+if (isEmpty($page_title)) $page_title = "Paul the Tutor's Education Center";
+$folder  = getfolder("","","");
+// get_top_links gets the links which will be used for the links in the top bar.
+$arlinks = get_top_links($folder);
+?>
+  <html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta name="google-site-verification" content="unawIL1y5LuUsTZ1mQiUnNzCruL_L1mktNdyqCjBQIg" />
+  <meta http-equiv="pragma" content="no-cache">
+        <meta name="keywords" content="Tutoring, LD tutoring, Learning Disability, Learning Disability SAT, LD SAT, SAT, SAT Prep, LD SAT Prep, LD Test Prep, LD SAT Tutoring" />
+  <title><?=$page_title;?></title>
+  <?php if ($folder == 'admin')?>
+  <link href="<?php echo MAIN_BASE_PATH?>/includes/paulthetutors.css" rel="stylesheet" type="text/css" />
+  <script language="JavaScript" src="<?php echo MAIN_BASE_PATH?>/includes/gen_validatorv2.js" type="text/javascript"></script>
+  <script language="JavaScript" src="<?php echo MAIN_BASE_PATH?>/includes/utils.js" type="text/javascript"></script>
+  <link rel="stylesheet" type="text/css" href="<?php echo MAIN_BASE_PATH?>/includes/jquery-ui-1.8.4.custom.css"/>
+  <script type="text/javascript" src="<?php echo MAIN_BASE_PATH?>/includes/jquery-1.7.1.min.js"></script>
+  <script type="text/javascript" src="<?php echo MAIN_BASE_PATH?>/includes/jquery-ui-1.8.4.custom.min.js"></script>
+  <script type="text/javascript" src="<?php echo MAIN_BASE_PATH?>/includes/jquery.timeentry.min.js"></script>
+  <script type="text/javascript" src="<?php echo MAIN_BASE_PATH?>/includes/jquery.ui.timepicker_1.2.js"></script>  
+  </head>
+  <body>
+  <?php if ($other2!='popup'){?>
+  <table width="876" border="0" align="center" cellpadding="0" cellspacing="0">
+    <tr>
+    <td align="left" valign="top"><table width="100%" border="0" cellspacing="0" cellpadding="0">
+  <!--Banner-->    <?php if ($other2!='no_banner'){?>
+    <tr>
+    <td align="right" valign="top" class="header_bg"><a id="logo-link" href="/"></a>
+        <table width="100%" border="0" cellspacing="0" cellpadding="0">
+    <tr>
+    <td height="28" align="right" valign="top"></td>
+    </tr>
+    <tr>
+    <td align="right" valign="top" class="header_right_txt">(510) 730-0390<br />
+  4235 Piedmont Ave.<br />
+  Oakland, CA 94611</td>
+    </tr>
+  </table>
+  </td>
+    </tr>
+  <!--Banner-->
+
+  <!--Menu-->  
+    <tr>
+    <td align="left" valign="top"><table width="100%" border="0" cellspacing="0" cellpadding="0">
+    <tr>
+<?
+// put the actual links into the top bar    
+for($i=1;$i<8;$i++){ 
+?>
+     <td width="107" align="left" valign="top" class="Services"><a href="<?=$arlinks[$i][0];?>"><?=$arlinks[$i][1];?></a></td>
+    <td width="4" align="left" valign="top" style="width:4px;"><img src="<?php echo MAIN_BASE_PATH?>/images/navi_space.jpg" alt="space" /></td>
+<?
+} // ends the for loop
+?>
+     <td width="107" align="left" valign="top" class="Services"><a href="<?=$arlinks[$i][0];?>"><?=$arlinks[$i][1];?></a></td>
+    </tr>
+  </table></td>
+    </tr>
+  <!--Menu-->     
+    <?}?>  
+    <tr>
+    <td height="10" align="left" valign="top">
+    </td>
+    </tr>
+
+  <tr>
+  <td valign="top">
+  <?php } else ?>
+    <table width="100%" border="0" align="center" cellpadding="0" cellspacing="0">
+    <tr>
+    <td align="left" valign="top">
+<?
+} //end put header
+
+/***********************************************************************
+funtion put footer
+***********************************************************************/
+function put_ptts_footer($other){
+?>  
+  </td></tr>
+   <tr>
+    <td height="5" align="left" valign="top"></td>
+    </tr>
+<?
+if ($other!='popup'){
+?>
+  <!--Footer-->  
+    <tr>
+    <td align="center" valign="top" class="footer_bg"><table width="95%" border="0" cellspacing="0" cellpadding="0">
+    <tr>
+    <td align="right" valign="top" class="footer_left_txt">Not Just Better Grades... Better Thinkers</td>
+    <td width="30" align="center" valign="top">&nbsp;</td>
+    <td width="300" align="right" valign="middle" class="footer_txt">&copy; 2010 Paul The Tutor's Education Center</td>
+    </tr>
+  </table></td>
+    </tr>
+  <!--Footer-->   
+<?}?>  
+    <tr>
+    <td align="left" valign="top">&nbsp;</td>
+    </tr>
+  </table>
+  </td>
+    </tr>
+  </table>
+  </body>
+  </html>
+<?
+} // end put_ptts_footer
+
+/***********************************************************************
+funtion get_tut_info($tutor_id)
+inputs: tutors id
+outputs: array with all of tutors info
+***********************************************************************/
+function get_tut_info($tutor_id){
+  $TQStr = "select * from PT_Tutors where id = $tutor_id";
+  $TRS = runquery($TQStr);
+  $TAR = mysql_fetch_array($TRS);
+  return $TAR;
+} // end get_tut_info
+
+/***********************************************************************
+funtion get_fam_name($fam_id)
+inputs: family id
+outputs: main_name (students) as a string
+***********************************************************************/
+function get_fam_name($fam_id){
+  $FQStr = "select main_name, students from PT_Family_Info where id = $fam_id";
+  $FRS = runquery($FQStr);
+  $far = mysql_fetch_array($FRS);
+  $fn_str = "$far[main_name] ($far[students])";
+  return $fn_str;
+} // end get_fam_name
+
+/****************************************************
+ * puts row to get tutor's id
+ * inputs: pre-selected tutor is, name of field, code to execute onchange (optional)
+ * ***************************************************/
+function get_tutor_id($selected_value, $name="tid", $callback="", $opts=null){
+
+?>
+   <tr valign="middle"><td><div align="right">Tutor
+<? if((isset($opts['required']) && $opts['required'])) echo"'<font color="#FF0000">*</font>'"; ?>
+   &nbsp;&nbsp;&nbsp;</td><td>
+<?    
+  tutorsid_menu($selected_value, $name, $callback, $opts);
+  echo "</td><tr>";
+  
+}  
+
+/****************************************************
+ * Show tutors dropdown menu
+ * inputs: pre-selected tutor is, name of field, code to execute onchange (optional)
+ * ***************************************************/
+function tutorsid_menu($selected_value="", $name="tid", $callback="", $opts=null)
+{
+  !$opts && $opts=array();
+  
+  ?>
+  
+  <script type="text/javascript">
+
+			$(document).ready(function() 
+			{ 
+			 $('#tutor_menu_<?=$name?>').change(function() {
+			  option=$(this).val();
+			  
+			   $.get('maven_comment_info.php?id='+option,function(data) {
+			  	if(data!=" ")
+					{
+					$("input[name=commentor]").val(data);
+					$('#commentor').hide();
+					}
+					else
+					{
+					$("input[name=commentor]").val(data);
+					$("#commentor").show();
+					}	
+				});
+			  
+			  });
+			});
+			
+			
+		</script>   
+  
+  
+  <select id="tutor_menu_<?=$name?>" name="<?=$name?>" onChange="<?=$callback?>">
+         <option value="">Select Tutor</option>
+       <?
+if(isset($opts['all']) && $opts['all']) {
+  $where = '';
+} else {
+  $where = "WHERE position LIKE '%tutor%' OR position LIKE '%class%'";
+}
+$QStrsi = "select id, first_name, last_name, id from PT_Tutors $where ORDER BY first_name";
+if(!($siRS = mysql_query($QStrsi))){
+  echo "QStr:  $QStrsi <BR>" . mysql_error() . "<BR><BR>";
+}
+$arsis[0] = "All";
+while($arsi = mysql_fetch_array($siRS)){
+  $sel_str = $arsi['first_name']." ".$arsi['last_name'];
+?>
+       <option value="<?=$arsi['id']?>" <?=$selected_value==$arsi['id']?"Selected":"";?>><?=$sel_str?></option>
+	   
+<? 
+
+} ?>
+       
+       <option value="-1"> Other </option>
+	   
+	    </select>
+  <? 
+} // end tutid_menu
+     
+/****************************************************
+ * puts a 2 columns to get student id
+ * inputs: pre-selected student is, name of field, code to execute onchange (optional)
+ * ***************************************************/
+    
+     
+function get_student_id($selected_value=NULL, $name="student_id", $callback="", $opts=null){
+
+?>
+   <tr valign="middle"><td><div align="right">Student
+<? if($opts['required'] == 1) echo"<font color=\"#FF0000\">*</font>"; ?>
+   &nbsp;</td><td>
+<?    
+  studentid_menu($selected_value, $name, $callback, $opts);
+  echo "</td><tr>";
+}  
+
+/****************************************************
+ * Show students dropdown menu
+ * inputs: pre-selected tutor is, name of field, code to execute onchange (optional)
+ * ***************************************************/
+function studentid_menu($selected_value=NULL, $name="student_id", $callback="", $opts=null)
+{
+  !$opts && $opts=array();
+  
+ 
+  
+  ?>
+   <script type="text/javascript">
+  $(document).ready(function() 
+			{ 
+			 $('#student_menu_<?=$name?>').change(function() {
+			  option1=$(this).val();
+			   $.get('maven_comment_info.php?s_id='+option1,function(data1) {
+			   if(data1!="*")
+			   {
+			  var s_name=data1.split('*');
+				$("input[name=first_name]").val(s_name[0]);
+				$("input[name=last_name]").val(s_name[1]);
+				$("#first_name").hide();
+				$("#last_name").hide();
+				}
+				else
+				{
+				 var s_name=data1.split('*');
+				$("input[name=first_name]").val(s_name[0]);
+				$("input[name=last_name]").val(s_name[1]);
+				$("#first_name").show();
+				$("#last_name").show();
+				}
+					
+				});
+			  
+			  });
+			});
+			</script>
+  
+  
+  
+  <select id="student_menu_<?=$name?>" name="<?=$name?>" onChange="<?=$callback?>">
+         <option value="">Select Student</option>
+       <?
+ 
+	   
+	   
+if(isset($opts['all']) && $opts['all']) {
+  $where = '';
+} else {
+    //  if we don't want all of the students;
+}
+$QStrsi = "select id, first_name, last_name, id from PTStudentInfo_New $where ORDER BY first_name,last_name DESC";
+if(!($siRS = mysql_query($QStrsi))){
+  echo "QStr:  $QStrsi <BR>" . mysql_error() . "<BR><BR>";
+}
+
+$arsis[0] = "All";
+while($arsi = mysql_fetch_array($siRS)){
+  $sel_str = $arsi['first_name']." ".$arsi['last_name'];
+?>
+       <option value="<?=$arsi['id']?>" <?=$selected_value==$arsi['id']?"Selected":"";?>><?=$sel_str?></option>
+<? } ?>
+
+       <option value="-1"> Other </option>
+  
+
+        </select>
+  <?
+} // end studentid_menu
+     
+     
+     
+
+/***********************************************************************
+funtion fam_menu($style, $name, $fam_id, $label, $other)
+inputs: style(student or last); $inputname = the name of the select; $fam_id = the selected option; $label = the label of the first option
+outputs: a pull down menu for selecting a family
+***********************************************************************/
+function fam_menu($style="student", $inputname="sid", $fam_id=0, $label="", $other=""){
+if ($other != "archive")
+  $table = "PT_Family_Info";
+else
+  $table = "ZZ_PT_Family_Info_Old";
+$FRS = runquery("select ".($other!='archive' ? 'id' : 'old_id')." as id, main_name, students from $table ".($style == "student" ? "ORDER BY students" : ""));
+if ($style == "student"){
+  while ($far = mysql_fetch_array($FRS)){
+     $lab_id = $far['id']; 
+     $arr[$far['id']] =  "$far[main_name] ($lab_id) ($far[students])";
+  }
+}elseif($style == "last"){
+  while ($far = mysql_fetch_array($FRS)){
+    $name = ""; $a = array();
+    $a = explode(" ", trim($far['main_name']));
+    $a = array_reverse($a);
+    foreach ($a as $m=>$n){
+      if ($a!='')
+        $name.= trim($n).($m == 0 ? ", " : "");
+    }
+    $lab_id = $far['id']; 
+    $arr[$far['id']] = "$name ($far[students]) ($lab_id)";
+  }
+  natcasesort ($arr);
+}
+
+if ($other == "return_fam_name")
+  return $arr[$fam_id];
+!isset($ret) && $ret = '';
+$ret.='<select name="'.$inputname.'" id="'.$inputname.'">
+      <option value="" selected>'.$label.'</option>';
+
+foreach ($arr as $k=>$v){
+  $ret.='<option value="'.$k.'" '.($fam_id == $k ? "selected" : "").'>'.$v.'</option>';
+}
+
+$ret.= '</select>';
+return $ret;
+
+} // end fam_menu
+
+/***********************************************************************
+funtion put_fam_menu($style, $name, $fam_id, $label, $other)
+inputs: style(student or last); $inputname = the name of the select; $fam_id = the selected family; $label = the label of the first option
+outputs: none
+objective: display family menu
+***********************************************************************/
+function put_fam_menu($style="student", $inputname="fid", $fam_id=0, $label="", $other=""){
+  $ret = fam_menu($style, $inputname, $fam_id, $label, $other);
+  echo $ret;
+} // end fam_menu
+
+/***********************************************************************
+funtion class_menu()
+$class_id = this is the class that is already selected.
+
+
+***********************************************************************/
+function class_menu(){
+	SelectFromQuery($QStr, $disName, $varName, $disArray, $varSelected, $strComment, $special, $labelFirst);
+}	
+
+/***********************************************************************
+funtion reqToVars()
+inputs: none
+outputs: none
+objective: take all variables in $_Request and make them global variables
+***********************************************************************/
+function reqToVars(){
+// echo "In reqtovars Now <BR><BR>";
+  foreach($_REQUEST as $key=>$value) { 
+    global ${$key}; 
+    ${$key} = $value;
+  }
+reset($_REQUEST);
+}
+
+
+
+/***********************************************************************
+funtion gettutBillInfo()
+objective: if it is a month prior to 2011, uses the old billing program
+  otherwise used the new one
+***********************************************************************/
+Function gettutBillInfo($month, $year, $sid, $tid, $other) {
+  if($year > 2010){
+    $bar = gettutBillInfo_2011($month, $year, $sid, $tid, $other);
+  } else {
+    $bar = gettutBillInfo_2010($month, $year, $sid, $tid, $other);  
+  }
+  return $bar;
+}
+
+/*-------------------------------------------------------------------  */
+/* gets the array with a students billing information for a month  */
+/* returns a array with
+  arBillInfo[date,rate,hours,special,comments]*/
+/*-------------------------------------------------------------------  */
+///get the schedule for the students: day of week, hours and rate
+Function gettutBillInfo_2011($month, $year, $sid, $tid, $other) {
+  $first_of_month = "$year/$month/1";
+  if($month <12){
+    $next_month = $month + 1;
+    $first_of_nextmonth = "$year/$next_month/1";
+  } else {
+    $next_year = $year + 1;
+    $first_of_nextmonth = "$next_year/1/1";
+  }  
+  $i = 0;
+// get the added appts
+  $QStr = "select a.*, a.name as student_name, t.first_name as t_first_name, a.student_id as student_id, t.last_name as t_last_name  from PTAddedApp a LEFT JOIN PT_Tutors t ON a.tid = t.id where year(a.date) = $year"." and month(a.date) = $month and (a.sid = $sid)  ".($tid ? "and a.tid = $tid" : ""). " Order by a.date, a.start_time ASC";
+// echo "QStr is $QStr <BR>";  
+  if(!($AdARS = mysql_query($QStr))){
+    echo "$QStr <br>" . mysql_error();
+  } else {
+//printRS($AdARS);
+  }  
+// echo $QStr . "qstr <BR>";  
+        $arBillInfo = null;
+  while($arAdA = mysql_fetch_array($AdARS)){
+// printarray($arAdA);
+    $arDate = explode("-", $arAdA['date']);
+// echo "i is $i <BR>";
+    $arBillInfo[$i]['student_name'] = $arAdA['student_name'];
+    $arBillInfo[$i]['printday'] = $arDate[2];
+    $arBillInfo[$i]['date'] = date("dS \of M", mktime (0,0,0,$arDate[1],$arDate[2],$arDate[0]));
+    $arBillInfo[$i]['special'] = "&nbsp;";
+    $arBillInfo[$i]['comments'] = $arAdA['comments'];
+    $arBillInfo[$i]['start_time'] = $arAdA['start_time'];
+    $arBillInfo[$i]['id'] = $arAdA['id'];
+    $arBillInfo[$i]['tid'] = $arAdA['tid'];
+    $arBillInfo[$i]['t_name'] = $arAdA['t_first_name']." ".strtoupper(substr($arAdA['t_last_name'],0,1));
+    $arBillInfo[$i]['pay'] = $arAdA['pay'];
+    $arBillInfo[$i]['hours'] = $arAdA['hours'];
+    $arBillInfo[$i]['rate'] = $arAdA['rate'];
+    $arBillInfo[$i]['student_id'] = $arAdA['student_id'];
+    $i = $i+1;
+  }
+// printarray($arBillInfo);  
+return $arBillInfo;
+} //END FUNCTION 
+
+/*-------------------------------------------------------------------  */
+/* prints a Roster with the fields provided.                */
+/*  strFields is the fields that will be in the table           */
+// $arFields is array with key = field and value = Column Title
+// $arColumn has the names of columns if specified
+// 
+/*-------------------------------------------------------------------  */
+function tableview($strTable, $strFields, $arColumn, $strRestrictions, $booledit, $sortby, $sortorder, $tableclass, $other){
+// printarray($_SESSION);
+// if $strFields is blank, fill it with main_fields from PT_Table_Info
+if(isEmpty($strFields)){
+  $FQStr = "select main_fields from PT_Table_Info where name = '$strTable'";
+  $strFields = singlequery($FQStr);
+  // if there is nothing listed as columns to show for that table, show all of them
+  if(isEmpty($strFields)){
+    $strFields = "*";
+  }
+}
+
+$_SESSION[strTable] = $strTable;
+// get's name of the page
+$page_name = $_SERVER['PHP_SELF'];
+$arPage = explode("/",$page_name);
+$numSlash = substr_count("$page_name", "/");
+$page_name = $arPage[$numSlash];
+// echo $page_name;  
+//if the order is indicated, create an oderby statement
+if(!(isEmpty($sortby))){
+  $orderby = "order by $sortby";
+  //if the order is indicated, also include that in the orderby statment
+  if(!(isEmpty($sortorder))){
+    $orderby = $orderby . " " . $sortorder;
+  }
+}  
+?>
+<table border="1" cellspacing="0" cellpadding="4" bordercolor="#000000" class=<?=tableclass;?>><tr> 
+<?
+if(isEmpty($strRestrictions)) $strRestrictions = "1 = 1";
+// get the information from the table
+// make sure the id is in the search
+$strFields = $strFields . ", id as hidden_id";
+$QStr = "select $strFields from $strTable where $strRestrictions $orderby ";
+$tempRS = runquery($QStr);
+$temparray = mysql_fetch_assoc($tempRS);
+// while loop will put the titles for every field
+while(list($key,$value ) = each($temparray)){
+  if($key <> "hidden_id"){ // don't show the hidden id number
+  // If the name for a column is set, use it, otherwise, use the function which maipulates names 
+      if(isset($arFieldNames[$key])){
+        $disName = $arFieldNames[$key];
+      } else {
+        $disName = setDisplayFieldVals($key);
+      } ?>
+      <th style="white-space: nowrap">
+        <?=$disName;?>
+      <a href='<?=$page_name;?>?strTable=<?=$strTable;?>&sortby=<?=$key;?>&sortorder=DESC'>&darr;</a><a href='<?=$page_name;?>?strTable=<?=$strTable;?>&sortby=<?=$key;?>&sortorder=ASC'>&uarr;</a>
+      </th>
+      <?
+    } else {// if  Hidden_id store it
+      $hidden_id = $value;
+    }  
+} //while
+    if($booledit == "view" or $booledit == "edit" or $booledit == "full") echo "<th> Action </th></tr>";
+  reset($temparray); // go back to the beginning of the array
+  do{ // cycle through each row in the table
+    echo "<TR>";
+    while(list($key,$value ) = each($temparray)){ //print each value from each cell in the row
+      if($key <> "hidden_id" ){
+        if(isEmpty($value)) $value = "&nbsp;";
+        If (strlen($value) >= 50){
+          $value = substr($value,0,50);
+          $value = $value . "... [truncated]";
+        }
+
+		// if the variable is a time, convert it
+		$is_time = substr_count($key, 'time');		
+		if($is_time > 0) {
+			$value = format_time_print($value);
+		}	
+
+		// if the field is a date, format it
+		$is_date = substr_count($key, 'date');		
+		if($is_date > 0) {
+			$value = format_date_print($value);
+		}	       
+	   
+
+
+
+        echo "<TD align=\"center\">$value</TD>   ";
+      } else {// if  Hidden_id store it
+        $hidden_id = $value;
+      }  
+    } 
+    if($booledit == "view" or $booledit == "edit" or $booledit == "full") {
+      ?>
+<td align=\"center\" >
+<? if($booledit == "view" or $booledit == "edit" or $booledit == "full") { // if the user has right to view, edit or delete      
+?>    
+  <a onClick="javascript:popup('show_record.php?hidden_id=<?=$hidden_id;?>','Details','600','820')">
+      <img src="../images/view.gif" border="0"></a> &nbsp;
+<? if($booledit == "edit" or $booledit == "full") { // if the user has right to edit      
+?>  
+  <a onClick="javascript:popup('edit_record.php?id=<?=$hidden_id;?>&strTable=<?=$strTable;?>','Details','600','820')">
+      <img src="../images/edit_pencil.gif" width="16" height="14" border="0"> </a>
+<!-- &nbsp;&nbsp;<img src="../images/del_x.gif" width="13" height="13"></td></tr> -->
+      <?
+    } // end if can see or edit  
+        } // end if can edit  
+      }
+  } while($temparray = mysql_fetch_assoc($tempRS));
+  echo "</tr></table><BR>";
+} // end function view_table
+
+/*-------------------------------------------------------------------  */
+function get_strNotUsed($strTable, $other){
+  $strNotUsed = singlequery("select ignore_fields from PT_Table_Info where name = '$strTableName'");
+  return $strNotUsed;
+}  
+
+/*----------------------------------------------------------------------------
+get_test_type_info($test_id, $other) 
+gets the information about a type of test, not an individual test given on an individual date
+returns an array with the information about that test from TP_Type_Tests
+INPUT
+test_id = the id number of the type of test
+----------------------------------------------------------------------------- */
+function get_test_type_info($test_id, $other){
+$TQStr = "select * from TP_Type_Tests where id = $test_id";
+$TestAR = rowquery($TQStr);
+
+return $TestAR;
+}
+
+/*----------------------------------------------------------------------------
+get_test_ini($test_id, $other = 0) 
+gets the abbreviation for a test
+returns an string
+INPUT
+test_id = the id number of the type of test
+----------------------------------------------------------------------------- */
+function get_test_ini($test_id, $other = 0){
+$TQStr = "select abbreviation from TP_Type_Tests where id = $test_id";
+$Test_ini = singlequery($TQStr);
+
+return $Test_ini;
+}
+
+/*----------------------------------------------------------------------------
+ptts2_mail(  ) 
+gets mail inputs and calls mail()
+in future will integrate with ptts_mail which only partially works
+----------------------------------------------------------------------------- */
+function ptts2_mail($email_address,$message,$subject,$other_h=NULL,$other_p=NULL){
+	
+	$result = mail($email_address,$message,$subject,$other_h,$other_p);
+	
+	return($result);
+}
+	
+
+

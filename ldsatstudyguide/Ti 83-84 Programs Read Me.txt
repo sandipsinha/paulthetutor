@@ -1,0 +1,19 @@
+PUTTING PROGRAMS ONTO YOUR CALCULATOR
+To put programs on calculator you must link download the programs to your computer and then link your calculator to the computer.  The following software http://education.ti.com/educationportal/sites/US/productDetail/us_ti_connect.html will allow you to link to your computer and load programs onto the calculator.
+
+If you have a ti83, you will probably have to buy this connection kit http://education.ti.com/educationportal/sites/US/productDetail/us_ti_connectivity_kit.html since it may not have a usb connection.
+ 
+
+PROGRAMS
+Don't try to run any programs that start with a 'y' or 'z'.  They are only there to help other programs run.  You need them or the other programs will not work, but you do not run them directly.
+
+List of programs
+1. ASYSOFEQ - A System of Equations - Tells you the value of 2 or more variables based on input equations
+2. Factors - Lists all of the factors of a number
+3. FRACCON - Converts between decimals, improper fractions and mixed numbers
+4. GREATER - Lists numbers in any format from least to greatest
+5. LASINCOS - Law of Sin and Cosine - Give any three measures of a triangle, and it will give the other three (angles and sides)
+6. POINTS - Given 2 points on an xy-plane returns the distance, midpoint, slope and y-intercept
+7. QUADRAT - Solves any Quadratic Equation Ax^2 + Bx + C = 0 in decimal and radical format and gives the vertex of the graph.
+8. SQREDUCE - Reduces any square root
+

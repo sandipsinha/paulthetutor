@@ -1,0 +1,668 @@
+<?php
+//***************************************************************
+// Checks the days of the month to see if they have been checked
+//**************************************************************
+define('CAL_WORK_HOURS', 4);
+define('CAL_IN_OUT', 5);
+
+
+function checkDates($month, $year, $other1='', $other2=''){
+
+	$admins = $other1;	$arr_tutors = $other2;
+	
+	$urlhome = substr(strrchr($_SERVER['PHP_SELF'], "/"),1);
+	$reflink = $urlhome . "?month=" . $month . "&year=" . $year . "&checked=";
+	$reflink2 = $urlhome . "?month=" . $month . "&year=" . $year . "&unchecked=";
+	$ld = date('t',mktime(0, 0, 0, $month, 10, $year));
+
+	for ($i=1; $i<= $ld; $i++){
+			$arCD[$i]['link'] = "<a  class=\"unchecked\" href=#void onclick=\"if (confirm('Do you want to mark $month-$i-$year as checked?')) document.location='". $reflink . $i ."'\"> UNCHECKED</a>";
+		$arCD[$i]['checked'] = 0;
+	}
+
+
+	$QStr = "select dayofmonth(date) as day, tid from PT_Checked_Day where month(date) = $month and year(date) = $year and checked > 0";
+	if (isset($_SESSION['tutor_id']) && $_SESSION['tutor_id']  && !$admins)
+		$QStr.=' AND tid="'.$_SESSION['tutor_id'].'"';
+	$CRS = runquery($QStr);
+	while($CheckAr = mysql_fetch_array($CRS)){
+		$day = $CheckAr['day'];
+		if (!$admins){
+			$arCD[$day]['link'] = "<a  class=\"checked\" href=#void onclick=\"if (confirm('Do you want to mark $month-$day-$year as unchecked?')) document.location='". $reflink2 . (int)$day ."'\">Checked</a>";
+			$arCD[$day]['checked'] = 1;
+		}else
+			$arr_tutors_checked[$day][$CheckAr['tid']] = 1;
+	}
+
+	
+	if ($admins == 1){
+		for ($i=1; $i<= $ld; $i++){
+			$arCD[$i]['checked'] = 1;
+			if (isset($arr_tutors[$i]) && count($arr_tutors[$i])){
+			foreach ($arr_tutors[$i] as $k=>$v)
+				if (!isset($arr_tutors_checked[$i][$v]) || $arr_tutors_checked[$i][$v] == 0)
+					$arCD[$i]['checked'] = 0;
+			}
+			if ($arCD[$i]['checked'] == 1)
+				$arCD[$i]['link'] = "<span class=other>Checked</span>";
+			else{
+				$date = $year.'-'.$month.'-'.($i<10 ? '0'.$i : $i);
+				$arCD[$i]['link'] = "<a  class=\"unchecked\" href=#void onclick=\"popup('popup_checked_days.php?date=".$date."&arr_tutors=".implode(",",$arr_tutors[$i])."','','500','500')\"> UNCHECKED</a>";
+			}
+		}
+	}
+	
+	Return $arCD;
+}
+// End Function ///////////////////////////////////////////////////////
+
+
+/**
+ * Takes and sorts array $SI in order of appointment dates, and outputs dynamic
+ * calendar based on same array.
+ *
+ * Takes the varible $month and the array $SI
+ *
+ * PHP versions 4 and 5
+ */
+
+/* Start of functions and classes
+ **************************************************************************
+ */
+
+/**
+ * User defined sort
+ *
+ * Function for user defined array sort.  The array is sorted by creating a
+ * date string from the day of the month and appointment start time.
+ * January 2001 is not important, it is just there to create a valid date string
+ * Result order is earliest to latest
+ */
+function sortByDate($x, $y)
+{
+
+	$xDate = strtotime($x['dom'] . 'January 2001 ' . $x['start']);
+	$yDate = strtotime($y['dom'] . 'January 2001 ' . $y['start']);
+	if ($xDate == $yDate) return 0;
+	else if ($xDate > $yDate) return 1;
+	else return -1;
+}
+
+/**
+ * Validation class
+ *
+ * Any validation functions needed are here.
+ */
+class Validation
+{
+
+	/**
+	 * Checks if a  numerical value is between 1 and 12
+	 */
+	function is1to12($check)
+	{
+		if ($check >= 1 && $check <= 12) return TRUE;
+		else return FALSE;
+	}
+
+	/**
+	 * Checks whether the varible passed is a valid month.
+	 *
+	 * Valid input:
+	 * -Integer 1-12 (1,5,6)
+	 * -String Integer 1-12 ("1","3","4")
+	 * -String Month ("December","March")
+	 * Case insensitive
+	 */
+	function isMonth($monthToCheck)
+	{
+		if (is_numeric($monthToCheck)) {
+			// Checks first if the numeric is an integer, or a string integer
+			// If neither, it doesn't pass check.  A float is not valid (eg 3.0 "3.0")
+			if (is_int($monthToCheck) && $this->is1to12($monthToCheck)) return TRUE;
+			else if (is_string($monthToCheck) and $monthToCheck === (string)(int)$monthToCheck && $this->is1to12($monthToCheck)) return TRUE;
+			else return FALSE;
+		} else {
+			// Check if the string is a valid month
+			$textualMonths = array('january','february','march','april','may','june','july',
+                                        'august','september','october','november','december');
+			$monthToCheck = strtolower($monthToCheck);
+			foreach ($textualMonths as $month) {
+				if ($month == $monthToCheck) return TRUE;
+			}
+			return FALSE;
+		}
+	}
+
+}
+
+/**
+ * Class containins needed calculations
+ */
+class Calculations {
+
+	/**
+	 * Calculates the number of cells to output
+	 */
+	function cellsToOutput($daysInMonth,$offset)
+	{
+		$totalNumber = $daysInMonth + $offset;
+		return ceil(($totalNumber / 7)) * 7;
+	}
+
+	/**
+	 * Turns numerical month into textual
+	 */
+	function numMonthToString($month) {
+		return date("F",strtotime($month . "/01/01"));
+	}
+
+}
+
+/**
+ * Class containins html output
+ *
+ * Changes to this will modify the look of the outputted HTML table for the
+ * calendar.
+ */
+class Template {
+
+	/**
+	 * Outputs table header
+	 */
+	function tableHeader($month,$year,$int_month,$type,$startDay,$rates)
+	{
+		?>
+		<!-- tareklink -->
+		<script type="text/javascript">
+
+		function openWin(id)
+		{
+			window.open('other_appoint.php?appntId='+id+'','Details','status=1 ,width=446,height=446');
+			
+		}
+
+		function openRecurWin(id)
+		{
+			window.open('../includes/recur_appoint.php?appntId='+id+'','Details','status=1 ,width=446,height=446');
+			
+		}
+		
+		
+		</script>
+		<!-- endtareklink -->
+<style type="text/css">
+<!--
+.lt {
+	font-size: 11px;
+}
+
+.dt {
+	font-size: 12px;
+	text-decoration: underline;
+	font-weight: bold;
+}
+
+.unchecked {
+	font-weight: bold;
+	color: #FF0000;
+	text-decoration: none;
+}
+
+.checked, .other {
+	color: #0000FF;
+}
+-->
+</style>
+		<?php
+		$urlhome = substr(strrchr($_SERVER['PHP_SELF'], "/"),1);
+		$minusyear = $year;
+		$plusyear = $year;
+		$minusmonth = $int_month-1;
+		$plusmonth = $int_month+1;
+		if ($int_month == 1) {
+			$minusyear = $year-1;
+			$minusmonth = 12;
+		} elseif ($int_month == 12) {
+			$plusyear = $year+1;
+			$plusmonth = 1;
+		}
+		if ($startDay) {
+			# special day handling
+		} elseif ($startDay) {
+			# special day handling
+		}
+
+		$reflink = "$urlhome?month=$int_month&year=$year";
+                $wd = null;
+		//$wd = "&nbsp;&nbsp;&nbsp;&nbsp;(<a href='$reflink&rates=$rates'>mo</a>  <a href='$reflink&type=week&day=$startDay&rates=$rates'>wk</a>  <a href='$reflink&type=day&day=$startDay'>dy</a>  <a href='$reflink&type=day&day=$startDay&rates=1'>d\$</a>)";
+
+		if ($type == 'week') {
+			$minusday = $startDay - 7;
+			$plusday = $startDay + 7;
+			$downlink = "$urlhome?month=$int_month&year=$year&type=week&day=$minusday";
+			$uplink = "$urlhome?month=$int_month&year=$year&type=week&day=$plusday";
+			
+			
+			echo '<table border="1" bordercolor="#000000" cellpadding="2" cellspacing="0" ><tr><th colspan="7"><a href="' . $downlink . '"><< previous week</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="' . "$reflink&type=$type&day=$startDay&rates=$rates" . '">' . $month . ' ' . $year . '</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+			<a href="' . $uplink . '">next week >></a>'.$wd.'</th></tr><tr><th colspan="7"></th></tr>';
+		} elseif ($type == 'day') {
+			$minusday = $startDay - 1;
+			$plusday = $startDay + 1;
+			$downlink = "$urlhome?month=$int_month&year=$year&type=day&day=$minusday&rates=$rates";
+			$uplink = "$urlhome?month=$int_month&year=$year&type=day&day=$plusday&rates=$rates";
+			echo '<table border="1" bordercolor="#000000" cellpadding="2" cellspacing="0" ><tr><th colspan="7"><a href="' . $downlink . '"><< day</a>&nbsp;<a href="' . "$reflink&type=$type&day=$startDay&rates=$rates" . '">' . $startDay . ' ' . substr($month,0,3) . ' ' . $year . '</a>&nbsp;<a href="' . $uplink . '"> day >></a>'.$wd.'</th></tr><tr><th colspan="7"></th></tr>';
+		} else {
+			$downlink = $urlhome . "?month=" . $minusmonth . "&year=" . $minusyear;
+			$uplink = $urlhome . "?month=" . $plusmonth . "&year=" . $plusyear;
+?>
+
+<tr><td align="right">
+
+<table width="" border="3" bordercolor="#000000" cellpadding="2" cellspacing="0" >
+<tr><form name = "form2" method="GET" action="calendar_action.php"><td colspan="7" align="right">
+<table width="100%" border="0" cellpadding="0" cellspacing="0">
+<tr><td align="left"> 
+<?
+// only show on admin calendar
+$folder = getfolder('','','');
+
+if($folder == "admin") {
+	echo "Select a Tutor: ";
+	tutorsid_menu($_SESSION['j_tid'], "j_tid", "Submit", "");
+}
+?>
+</td>
+<td align="right">
+
+
+
+
+<button onclick="javascript:popup('miviram_non_tutoring_appointment_edit.php','AddSchedule','600','600')"> Non-Tutoring Events/Work</button>&nbsp;&nbsp;&nbsp;
+<button onclick="javascript:popup('schedule_edit.php','AddSchedule','600','600')"> Recurring Tutoring Sessions</button>
+
+<?
+
+$folder = getfolder('','','');
+// if($folder == "admin") {
+
+?>
+&nbsp;&nbsp;&nbsp;
+<button onclick="javascript:popup('addsess_loc.php?popup=popup&tid=<?=$_SESSION['j_tid'];?>','Add Session','600','600')"> Tutoring Session </button>
+<? //} ?>
+<!--
+&nbsp;&nbsp;&nbsp;
+<button onclick="javascript:popup('addsess.php?popup=popup','Add Session','600','600')"> OLD Add Tutoring</button>
+-->
+</td></tr></table>
+</td></form></tr>
+
+<?			
+			
+			echo '<tr><th colspan="7"><a href="' . $downlink . '"><< previous month</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="' . "$reflink&type=$type&day=$startDay&rates=$rates" . '">' . $month . ' ' . $year . '</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+			<a href="' . $uplink . '">next month >></a>'.$wd.'</th></tr>';
+		}
+
+
+		if ($type != 'day') {
+			$daysOfWeek = array('Sunday','Monday','Tuesday','Wednesday','Thursday','&nbsp; Fri &nbsp;','&nbsp; Sat &nbsp;');
+			echo '<tr>';
+			foreach($daysOfWeek as $day) {
+				echo '<th>' . $day . '</th>';
+			}
+		}
+
+		echo '</tr><tr>';
+	}
+
+	/**
+	 * Outputs table footer
+	 */
+	function tableFooter()
+	{
+		echo '</tr>';
+		echo '</table>';
+	}
+
+	/**
+	 * Outputs blank table cell
+	 */
+	function blankCell()
+	{
+		echo '<td bgcolor="#CCCCCC">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>';
+	}
+
+	
+	/**
+	 * Outputs table cell with passed day of month and appointments for that
+	 * day
+	 */
+	function appointmentCell($dayOfMonth,$appointments,$arCheckedDate,$daylink,$cal_date = '')
+	{
+		$bgcolor = "";
+		if(IsEmpty($appointments) or ($appointments == "&nbsp;") or ($appointments == "<br />") ) {
+			$bgcolor = "bgcolor=\"#CCCCCC\"";
+		}	else {
+			$appointments =  "&nbsp;&nbsp;" . $arCheckedDate['link'] . "<BR>". $appointments;
+		}
+		
+		//if it is today, mark it as todaycolor
+		$today_num = date(j);
+		$month_num = date(m);
+		$cal_month = substr($cal_date,0,2);
+		$year_num = date(Y);
+		$cal_year = substr($cal_date,-4,4);
+		
+// echo "		$dayOfMonth == $today_num and $month_num == $cal_month and $year_num == $cal_year) <BR>";		
+		
+		
+		if($dayOfMonth == $today_num and $month_num == $cal_month and $year_num == $cal_year)
+			$bgcolor = "bgcolor=\"#BFFFBF\"";
+
+
+
+
+
+		echo '<td ' . $bgcolor . '  class="lt" style="vertical-align:top"><span class="dt"><a onclick="javascript:popup(\'addsess_loc.php?popup=popup&date='.$cal_date.'\',\'Details\',\'550\',\'550\')">' . $dayOfMonth . '</a></span>' . $appointments . '</td>	';
+	}
+}
+
+/* Start of main code
+ **************************************************************************
+ */
+class Main {
+
+	function main($appointmentArray,$month,$iyear,$type,$startDay,$rates,$admins) {
+
+		// If month is numeric, convert it to string (will already have been validated)
+		$folder = getfolder('','','');
+
+		$calculations =  new Calculations;
+		$int_month = $month;
+		if(is_numeric($month)) $month = $calculations->numMonthToString($month);
+		
+		
+		// Set needed date information
+		$year = $iyear;
+		
+		
+		
+		$unixTime = strtotime("01 " . $month . " " . $year);
+		$daysInMonth = date("t",$unixTime);
+		// Offset is needed so blank cells can be output for the calendar.  It is
+		// a numerical representation of the day of week
+		$offset = date("w",$unixTime);
+
+		if ($startDay == 0) {
+			$startDay = ($offset * -1) + 1;
+		}
+
+		
+		// Sort array with user defined function
+		usort($appointmentArray, 'sortByDate');
+		
+// printarray($appointmentArray);	
+		
+
+		$template = new Template;
+
+		// Output table header
+		$template->tableHeader($month,$year,$int_month,$type,$startDay,$rates);
+
+		$cellsToOutput = $calculations->cellsToOutput($daysInMonth,$offset);
+		$dayOfMonth = $startDay;
+		$printStart = $startDay;
+		$printEnd = $startDay + $cellsToOutput;
+		if ($type == 'week') {
+			$printEnd = $startDay + 6;
+		}
+		if ($type == 'day') {
+			$printEnd = $startDay;
+		}
+		
+		
+			
+		// get the checked and unchecked data
+                $arr_tutors = null;
+		for ($i=$dayOfMonth; $i <= $daysInMonth; $i++) {
+			$j=$i;
+			if ($i<10)
+				$j='0'.$i;
+			foreach ($appointmentArray as $k=>$v){
+				if ($v['dom'] == $j)
+					$arr_tutors[$i][] = $v['tid'];
+			}
+		}
+		$arCheckedDates = checkDates($int_month, $iyear, $admins, $arr_tutors);		 
+		$urlhome = substr(strrchr($_SERVER['PHP_SELF'], "/"),1);
+
+		$newLine =0;
+                $appointments = null;
+		for ($i = 0; $i < $cellsToOutput; $i++) {
+			if ($newLine == 7 ) {echo '</tr><tr>'; $newLine = 0;} // Creates a new TR for every week
+
+			// Output either a blank box, or a box with the date in it
+			if ($dayOfMonth <=0 or ($dayOfMonth > $daysInMonth) ) {
+				$template->blankCell();
+			} else {
+				// Check first element of array for the current day of month
+				// If there is a match, add the appointment and remove from array
+				
+				
+		                $append = '';	
+				$curr_date = "$year-$int_month-".$dayOfMonth;
+					
+					if(isset($_SESSION['tutor_id']))
+						$tutor_id = $_SESSION['tutor_id'];
+					else
+						$tutor_id = 1;
+					
+					
+					if($admins==0 or !isEmpty($tutor_id))
+					{
+						$times = $this->get_clockIn_clockOut($tutor_id, $curr_date);
+						$clock_in = "";
+						$clock_out = "";
+						if($times!=-1)
+						{
+							
+							$in_tmp = $times[0];
+							$out_tmp = $times[1];
+							
+							
+							
+							$in_hrs = date("g", strtotime($in_tmp));
+							$in_mins = date("i",strtotime($in_tmp));
+							$in_ampm = date("a", strtotime($in_tmp));
+							
+							$out_hrs = date("g", strtotime($out_tmp));
+							$out_mins = date("i",strtotime($out_tmp));
+							$out_ampm = date("a", strtotime($out_tmp));
+							
+							$clock_in = "<b>$in_hrs:$in_mins $in_ampm IN</b><br />";
+							$clock_out = "<b>$out_hrs:$out_mins $out_ampm OUT</b>";
+						}
+						
+						
+						$appointments.=$clock_in;
+					}
+				
+				$append = null;
+				$prepend = null;
+				while (isset($appointmentArray[0]) && $appointmentArray[0]['dom'] <= $dayOfMonth) {
+					$shift = array_shift($appointmentArray);
+					
+					if (!is_array($shift)) {
+						break;
+					}
+					if ($shift['dom'] < $dayOfMonth) {
+						continue;
+					}
+					// This makes it floating point...
+					isset($shift['hrs']) && $shift['hrs'] *= 1;
+					isset($shift['rate']) && $shift['rate'] *= 1;
+					///tareklink///
+					$startTime = '';
+					$endTime = '';
+					
+					
+					
+					//if ($shift['start'] != 0) 
+					isset($shift['start']) && $startTime = date("g:i a",strtotime($shift['start']));
+					//if ($shift['end'] != 0) 
+					isset($shift['end']) && $endTime = date("g:i a",strtotime($shift['end']));
+                                        $display = true;
+					if(isset($shift['type'])){
+
+						if($shift['type'] == 3){
+							$href = "javascript:openRecurWin(".$shift['id'].")";
+							$class_app = "";
+						} elseif($shift['type'] == CAL_WORK_HOURS) {
+                             $href = 'javascript:popup(\'work_hours_edit.php?id='.$shift['id'].'\',\'\',600, 800)';
+							//echo "Work Hour: ".var_export($shift,true)."<br>\n";
+						$append .= "<b>".(isset($shift['tutname'])  && $admins ? '<font color="black">' .$shift['tutname'] . ': ' . '</font>' : '').'<a class="work_hours" href="'.$href.'">'.$shift['name'].'</a></b> '.$shift['hours'].' hrs @ $'.$shift['rate'].'/hr<br>';
+                                                        $display= false;
+						} elseif($shift['type'] == CAL_IN_OUT) {
+                                                        $prepend .='<span class="in_out"><span class="in">In: '.$shift['start']. '</span> <span class="out">Out: '.$shift['end']."</span></span><br>\n";
+                                                        $display= false;
+						} else {
+							$href = "javascript:openWin(".$shift['id'].")";
+							$class_app = "other";
+						}
+						
+					//	$href = 'javascript:window.open("other_appoint.php?appntId='.$shift['id'].'","Details","status=1 ,height=\'300\' , width=\'300\'")';
+                                              if ($display) {
+						$appointments .= '<b>'.(isset($shift['tutname'])  && $admins ? '<font color="black">' .$shift['tutname'] . ': ' . '</font>' : '').'<a class="'.$class_app.'" href="'.$href.'">'. $shift['name'] . '</b></a> ' . $startTime . '-' . $endTime;
+						}
+					}else
+					{
+                                          if ($display) {
+						$href = "#void";
+						$class_app = "other";
+						if ($shift['id']){
+$folder = getfolder('','','');
+if($folder == 'admin')
+	$view_link = "appoint_loc.php";	
+if($folder == 'tutors')
+	$view_link = "appoint_loc.php";
+							$href = "javascript:popup('" . $view_link . "?appntId=".$shift['id']."','Details','500','500')";
+							$class_app = "a_green";
+							if ($shift['rate'] == 0 || $shift['pay'] == 0)
+								$class_app = "a_red";
+						}
+						if($admins == 1){
+							$appointments .= '<B>' . '<font color="black">' .$shift['tutname'] . ': ' . '</font><a class="'.$class_app.'" href="'.$href.'">' .$shift['name'] . '</a></b> ' . $startTime . ' (' . $shift['hrs'] . ')';
+						}
+						else
+							$appointments .= '<B><a class="'.$class_app.'" href="'.$href.'">' .$shift['name'] . '</a></b> ' . $startTime . ' (' . $shift['hrs'] . ')';
+                                          }
+					}
+					
+					
+					if ($rates && !isset($shift['type'])) {
+						$appointments .= " <font color='#11CC00'>\$$shift[rate]</font>";
+					}
+					///endtareklink///
+					
+					$appointments .= '<br />';
+				}
+                                if ($prepend!= '') {
+                                  $appointments = '<div class="cal_top">'.$prepend.'</div>'.$appointments;
+                                }
+                                if ($append != '') {
+                                  $appointments .= '<div class="cal_bottom">'.$append.'</div>';
+                                }
+				isset($clock_out) && $appointments.=$clock_out;
+				$daylink = "$urlhome?month=$int_month&year=$year&type=day&day=$dayOfMonth&rates=1";
+
+				//Uncomment the line below to add the day link below the events in the day cell
+				//$appointments .= "<a href='$daylink'>day</a><br />";
+				if ($dayOfMonth >= $printStart && $dayOfMonth <= $printEnd) {
+					$pop_date = ($int_month<10 ? '0'.$int_month : $int_month)."-".((int)$dayOfMonth<10 ? '0'.(int)$dayOfMonth:$dayOfMonth).'-'.$year;
+					//FIXME Should not have to force checked to true, should just stop at the end of the month.
+                                        $template->appointmentCell($dayOfMonth,$appointments,isset($arCheckedDates[$dayOfMonth]) ? $arCheckedDates[$dayOfMonth]:true,$daylink,$pop_date);
+				}
+
+				$appointments = '<br />';
+			}
+			$dayOfMonth++;
+			$newLine++;
+		}
+
+		$template->tableFooter();
+
+		unset($appointmentArray);
+	}
+	
+	function get_clockIn_clockOut($tid, $date)
+	{
+		
+	
+		
+		$query = "SELECT * FROM PT_SchedSS_Spec WHERE tutor_id = $tid AND date = '$date'";
+		
+		
+		$times_res = mysql_query($query);
+		
+		if(mysql_num_rows($times_res) == 0)
+		{
+			$dow = date("N", strtotime($date));
+			
+			
+			
+			$query = "SELECT * FROM PT_SchedSS_Norm WHERE tutor_id = $tid AND start_date <= '$date' AND end_date >= '$date' AND dow = $dow";
+			$times_res = mysql_query($query);
+		}
+		
+				
+		
+		if(mysql_num_rows($times_res)>0)
+		{
+			
+			$times = mysql_fetch_object($times_res);
+			
+			$arr = Array();
+			$arr[0]=$times->clock_in;
+			$arr[1]=$times->clock_out;
+			
+			return $arr;
+		}
+		
+		return -1;
+	}
+	
+}
+
+
+//$type = month, week, day_rate, day_simple.
+function outputCalendar($SI,$month,$iyear,$type,$startDay,$rates, $admins) {
+	// If the expected variable isn't an array type, then create a blank array
+	// to avoid unexpected errors
+	if (isEmpty($rates)){
+		
+		$rates = 1;
+		$tutor_id = $_SESSION['tutor_id'];
+		
+//		echo "tutors id is $tutor_id <br>";
+		
+		$folder = getfolder('','','');
+		if($folder == "tutors" and  $tutor_id <> 1)
+			$rates = 0;
+	}
+	
+	if (!is_array($SI)) $SI = array();
+
+	// Make sure that the month supplied is valid.  If it isn't, use the current month
+	$validation = new Validation;
+	if (!$validation->isMonth($month)) $month = date("F");
+	
+	// Precaution
+	if ($type=='day' && $startDay <= 0) {
+		$startDay = 11;
+	}
+
+	// Call the main code
+	$main = new Main($SI,$month,$iyear,$type,$startDay,$rates, $admins);
+}
+
+?>

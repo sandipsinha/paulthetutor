@@ -1,0 +1,57 @@
+<link href="../NewPTTcss.css" rel="stylesheet" type="text/css">
+<style type="text/css">
+<!--
+.plain {
+	font-weight: normal;
+}
+.style1 {font-weight: normal; font-size: 10px; }
+.style3 {font-weight: normal; font-size: 12px; }
+.style4 {font-size: 12px}
+.book_position {
+	left: 5px;
+	top: 450px;
+	position: absolute;
+}
+-->
+</style>
+</head>
+
+
+<table width="686" border="0" cellpadding="5" cellspacing="0" background="../images/flowbg.gif">
+  <tr >
+    <td height="25" colspan="2"" valign="top" class="Head1_Green">Please Enter Your Child's Information 
+<body>
+<?
+$fid = $_REQUEST[fid];
+
+// $fid = $_GET[fid];
+?>	
+	
+	
+	
+	</td>
+    <td width="150" rowspan="3"" valign="top"><div align="right"><span class="style3">    </span><span class="Head2">      </span>      <br>
+      <br>
+      <br>
+    </div></td>
+  </tr>
+  <tr>
+    <td width="1" rowspan="2" align="center" valign="bottom"><div align="center"><br>
+          <br>
+    </div>      <div align="left"></div></td>
+    <td width="505" height="66" valign="top"> <p>
+      <form name="form1" method="post" action="miviram_putstudentinfo.php">
+        <? 
+		
+$strNotUsed = getIgnoreColumns('PTStudentInfo_New', 'PT_Table_Info');
+putHiddenField('fid', $fid);
+
+MySQL_BlankForm('PTStudentInfo_New', '', $arFieldsVals, $arFieldComments, $$arHidden, $strNotUsed, $tdStyle);
+?>	
+      </form>  
+    </td>
+  </tr>
+  <tr>
+    <td height="40" valign="top">&nbsp;</td>
+  </tr>
+</table>

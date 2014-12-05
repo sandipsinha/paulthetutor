@@ -1,0 +1,81 @@
+<style type="text/css">
+<!--
+.plain {
+	font-weight: normal;
+}
+-->
+</style>
+<link href="../includes/paulthetutors.css" rel="stylesheet" type="text/css">
+</head>
+
+<body>
+
+<table width="686" border="0" cellpadding="3" cellspacing="0" background="../images/flowbg.gif">
+  <tr>
+    <td height="25" colspan="2" valign="top"><span class="Head1_Green">
+        Hello 
+<?= $tar['first_name']; ?>
+</span>  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(not 
+<? 
+echo $tar['first_name'] . " " . $tar['last_name'] . "?"; 
+?>
+
+<a href="tutlogin.php?logout=1">Log
+Out</a>)
+    <div align="right"></div></td>
+    
+  <tr>
+    <td width="36" height="51" valign="top">&nbsp;</td>
+    <td width="509" height="51" valign="top"><p><span class="Head2">Most Common Links </span><br>
+&nbsp;&nbsp;- <a href="calendar_action.php">View Your Calendar</a><br>
+&nbsp;&nbsp;- <a href="comments_inprogress.php">Notes On Students</a> <br>
+&nbsp;&nbsp;- <a href="non_tutoring_appointments.php">Non-Tutoring Appointments </a><br>
+
+&nbsp;&nbsp;- <a href="work_hours_list.php">Admin/Teaching Work</a><br>
+<span class="Head2"><br>
+Tutoring Scheduling</span><br>
+&nbsp;&nbsp;- <a href="calendar_action.php">View Your Calendar</a><br>
+&nbsp;&nbsp;- <a href="schedules.php">Schedules </a><br>
+&nbsp;&nbsp;- <a href="Tutoring%20Time%20Card.pdf">Time Cards </a> (<a href="Time%20Card%20Explanation.pdf">Instructions</a>)<br>
+&nbsp;&nbsp;- <a href="zeromoney.php">Zero Money Appoinments </a><br>
+<br>
+
+<span class="Head2">Availability Scheduling</span><br>
+&nbsp;&nbsp;- <a href="set_times.php">Set  Regular Hours </a> <br>
+&nbsp;&nbsp;- <a href="set_special_times.php">Set Special Hours</a><BR>
+&nbsp;&nbsp;- <a href="non_tutoring_appointments.php">Non-Tutoring Appointments </a><br>
+&nbsp;&nbsp;- <a href="schedules.php">Schedules </a><br>
+&nbsp;&nbsp;- <a href="vacation_list.php">Vacations</a> <br>
+
+<br>
+<span class="Head2">Non-Tutoring Work </span><br>
+&nbsp;&nbsp;- <a href="work_hours_edit.php">Add Non-Tutoring Hours</a><br>
+&nbsp;&nbsp;- <a href="work_hours_list.php">View Non-Tutoring Hours</a><br>
+
+
+<span class="Head2"><br>
+Families</span> <br>
+&nbsp;&nbsp;- <a href="families.php">Families</a><br>
+&nbsp;&nbsp;- <a href="studentinfo.php">Student Info</a> <br>
+
+&nbsp;&nbsp;- <a href="comments_inprogress.php">Note's on Student</a> <br>
+<br>
+<span class="Head2">SAT Prep</span> <br>
+&nbsp;&nbsp;- <a href="view_rosters.php">Class Rosters</a><br>
+&nbsp;&nbsp;- <a href="../ldsatprep/ldsatadmin" target="_blank">SAT Admin</a> <br>
+
+<span class="Head2"><br>
+Manage Your Profile</span> <br>
+&nbsp;&nbsp;- <a href="gettutorinfo.php">Enter Your Info</a><br>
+&nbsp;&nbsp;- <a href="tutedit02.php">Edit Your Info</a> <br>
+    </td>
+	  
+	  
+  </tr>
+<tr>
+  <td height="138" colspan="3">&nbsp;</td>
+</tr>  
+</table>
+</body>
+</html>

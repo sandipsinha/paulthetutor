@@ -1,0 +1,27 @@
+@charset "utf-8";
+#loc_all {
+}
+
+.loc_address {
+	font-size: 14px;
+	font-weight: bold;
+	float:right;
+	text-align:right;
+	
+}
+
+.loc_image {
+	height: 240px;
+	width: 320px;
+}
+
+
+.loc_image_address {
+	float:right;
+	padding:5px;
+}
+
+.loc_map {
+	position: relative;
+	float: left;
+}

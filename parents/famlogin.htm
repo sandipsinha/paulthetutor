@@ -1,0 +1,87 @@
+<?php 
+
+
+$formcss = $strAbsPath . "/styles/form.css";
+
+
+
+if(isset($_REQUEST['next']))
+	$next = $_REQUEST['next'];
+
+if(isset($_REQUEST['username']))
+{
+	
+	$username = $_REQUEST['username'];
+	$password = $_REQUEST['password'];
+	
+
+	$query = "SELECT * FROM PT_Family_Info WHERE `username` = '$username' AND `password` = '$password'";
+	
+	$result = mysql_query($query);
+	
+	if(mysql_num_rows($result)==0)
+		$msg = "Invalid Username or Password";
+	else
+		{
+			$tutor = mysql_fetch_object($result);
+			$_REQUEST['tutor_id'] = $tutor->id;
+			
+			
+			if(isset($_REQUEST['remember'])&&$_REQUEST['remember']=="1")
+				setcookie("fid", $tutor->id, time()+60*60*24*365);
+			else
+				setcookie("fid", "", time()+60*60*24*365);
+			
+			if(isset($next))
+			{
+				$next=str_replace("---","/",$next);
+				header("Location: $next");
+				
+			}
+			else
+				header("Location: index_parents.php");
+		}
+}
+?>
+
+
+
+
+<link href="../includes/paulthetutors.css" rel="stylesheet" type="text/css">
+<style type="text/css">
+<!--
+.style1 {font-size: 10px}
+-->
+</style>
+<div style="text-align:center">
+	
+		
+		<?=$msg?>
+
+
+</div>
+
+<form method="POST" action="famlogin.php<?php echo isset($next)?'?next='.$next:'' ?>">  
+<fieldset>  
+<span class="Head1_Green">Login </span>  
+  
+<p for="username">
+  <label for="username">Username:</label>  
+  <input id="username" name="username" class="text" type="text" /> 
+  <br>
+  <label for="password">Password:</label>  
+  <input id="password" name="password" class="text" type="password" />
+  <br>
+  <a href="#i" class="style1">forgot your username or password?</a></p>
+<p>  
+  <input id="remember" name="remember" class="text" type="checkbox" value="1" /> 
+  Remember me on this computer<br>
+  <br>
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+  <input class="submit" type="submit"  
+value="Login" />
+</p>
+
+</fieldset>  
+</form>
+<span class="bold_text">New Client? <a href="fam_register.php">Click Here to register</a></span>

@@ -1,0 +1,807 @@
+<?php
+//***************************************************************
+// Checks the days of the month to see if they have been checked
+//**************************************************************
+function timeref($intime) {
+
+	$hr = floor($intime);
+	$min = $intime - $hr;
+	$min *= 60;
+	$timeref = sprintf("%02d:%02d", $hr, $min);;
+
+	return $timeref;
+}
+
+function checkDates($month, $year, $other, $other){
+
+	$urlhome = substr(strrchr($_SERVER['PHP_SELF'], "/"),1);
+	$reflink = $urlhom . "?month=" . $month . "&year=" . $year . "&checked=";
+
+	$ld = date(t,mktime(0, 0, 0, $month, 10, $year));
+
+	for ($i=1; $i<= $ld; $i++){
+		$arCD[$i] = "<a href=" . $reflink . $i . " class=\"unchecked\"> UNCHECKED</a>";
+	}
+
+
+	$QStr = "select dayofmonth(date) as day from PT_Checked_Day where month(date) = $month and year(date) = $year and checked > 0";
+	$CRS = runquery($QStr);
+	while($CheckAr = mysql_fetch_array($CRS)){
+		$arCD[$CheckAr['day']] = "<span class=\"checked\">Checked</span>";
+	}
+	Return $arCD;
+}
+// End Function ///////////////////////////////////////////////////////
+
+
+/**
+ * Takes and sorts array $SI in order of appointment dates, and outputs dynamic
+ * calendar based on same array.
+ *
+ * Takes the varible $month and the array $SI
+ *
+ * PHP versions 4 and 5
+ */
+
+/* Start of functions and classes
+ **************************************************************************
+ */
+
+/**
+ * User defined sort
+ *
+ * Function for user defined array sort.  The array is sorted by creating a
+ * date string from the day of the month and appointment start time.
+ * January 2001 is not important, it is just there to create a valid date string
+ * Result order is earliest to latest
+ */
+function sortByDate($x, $y)
+{
+	/*$xDate = strtotime($x['dom'] . 'January 2001 ' . $x['start']);
+	$yDate = strtotime($y['dom'] . 'January 2001 ' . $y['start']);
+	*/
+	$arX=explode(":",$x['start']);
+	$xDate=$x['date'] + $arX[0]*60*60 + $arX[1]*60 + $arX[2];
+	$arY=explode(":",$y['start']);
+	$yDate=$y['date'] + $arY[0]*60*60 + $arY[1]*60 + $arY[2];
+	if ($xDate == $yDate) return 0;
+	else if ($xDate > $yDate) return 1;
+	else return -1;
+}
+
+/**
+ * Validation class
+ *
+ * Any validation functions needed are here.
+ */
+class Validation
+{
+
+	/**
+	 * Checks if a  numerical value is between 1 and 12
+	 */
+	function is1to12($check)
+	{
+		if ($check >= 1 && $check <= 12) return TRUE;
+		else return FALSE;
+	}
+
+	/**
+	 * Checks whether the varible passed is a valid month.
+	 *
+	 * Valid input:
+	 * -Integer 1-12 (1,5,6)
+	 * -String Integer 1-12 ("1","3","4")
+	 * -String Month ("December","March")
+	 * Case insensitive
+	 */
+	function isMonth($monthToCheck)
+	{
+		if (is_numeric($monthToCheck)) {
+			// Checks first if the numeric is an integer, or a string integer
+			// If neither, it doesn't pass check.  A float is not valid (eg 3.0 "3.0")
+			if (is_int($monthToCheck) && $this->is1to12($monthToCheck)) return TRUE;
+			else if (is_string($monthToCheck) and $monthToCheck === (string)(int)$monthToCheck && $this->is1to12($monthToCheck)) return TRUE;
+			else return FALSE;
+		} else {
+			// Check if the string is a valid month
+			$textualMonths = array('january','february','march','april','may','june','july',
+                                        'august','september','october','november','december');
+			$monthToCheck = strtolower($monthToCheck);
+			foreach ($textualMonths as $month) {
+				if ($month == $monthToCheck) return TRUE;
+			}
+			return FALSE;
+		}
+	}
+
+}
+
+/**
+ * Class containins needed calculations
+ */
+class Calculations {
+
+	/**
+	 * Calculates the number of cells to output
+	 */
+	function cellsToOutput($daysInMonth,$offset)
+	{
+		$totalNumber = $daysInMonth + $offset;
+		return ceil(($totalNumber / 7)) * 7;
+	}
+
+	/**
+	 * Turns numerical month into textual
+	 */
+	function numMonthToString($month) {
+		return date("F",strtotime($month . "/01/01"));
+	}
+
+}
+
+/**
+ * Class containins html output
+ *
+ * Changes to this will modify the look of the outputted HTML table for the
+ * calendar.
+ */
+class Template {
+
+	/**
+	 * Outputs table header
+	 */
+	function tableHeader($pse,$type,$tutor)
+	{
+		?>
+<style type="text/css">
+<!--
+.lt {
+	font-size: 11px;
+}
+
+.dt {
+	font-size: 12px;
+	text-decoration: underline;
+	font-weight: bold;
+}
+
+th {
+	font-size: 18px;
+}
+
+.unchecked {
+	font-weight: bold;
+	color: #FF0000;
+	text-decoration: none;
+}
+
+.checked {
+	color: #0000FF;
+}
+
+.daytd {
+	width: 100px;
+	font-size: 14px;
+	padding: 0px;
+}
+
+.blankcell {
+	background-color: #CCCCCC;
+	width: 100px;
+}
+
+.hour {
+	width: 100px;
+	height: 16px;
+	padding: 2px 0 2px 0;
+	font-size: 10px;
+	border-top: 3px solid #000;
+	overflow:hidden;
+}
+
+.qtr {
+	width: 100px;
+	height: 8px;
+	font-size: 8px;
+}
+
+.open {
+	background-color: #ffffff;
+	cursor:pointer;
+}
+
+.unavail {
+	background-color: #c0c0c0;
+}
+
+.mine {
+	background-color: #00ee00;
+	cursor:pointer;
+}
+
+.taken {
+	background-color: #ee0000;
+}
+-->
+</style>
+<script type='text/javascript'>
+function addevent(date,time,user,tutor)
+{
+	var conf = confirm("Do you really want to ADD an appointment at " + time + "?", "NO");
+	if (!conf) {
+		return;
+	}
+	var url = window.location.href;
+	var pcs = new Array();
+	pcs = url.split("#");
+	url = pcs[0];
+	var ques = url.search(/\?/);
+	if (ques < 0) {
+		url = url + '?';
+	}
+	window.location.href = url + '&newdate=' + date + '&newtime=' + time + '&newfid=' + user + '&newtid=' + tutor;
+}
+function delevent(date,time,user,tutor)
+{
+	var conf = confirm("Do you really want to DELETE this appointment?");
+	if (!conf) {
+		return;
+	}
+	var url = window.location.href;
+	var pcs = new Array();
+	pcs = url.split("#");
+	url = pcs[0];
+	var ques = url.search(/\?/);
+	if (ques < 0) {
+		url = url + '?';
+	}
+	
+	window.location.href = url + '&deldate=' + date + '&deltime=' + time + '&delfid=' + user + '&deltid=' + tutor;
+}
+</script>
+		<?
+		$urlhome = substr(strrchr($_SERVER['PHP_SELF'], "/"),1);
+		/*$pse is start day time in seconds from epoch*/
+		$prelink = $pse-7*24*60*60;
+		$postlink = $pse + 7*24*60*60;  
+		$prelinkD = date("d",$prelink);
+		$prelinkM = date("n",$prelink);
+		$prelinkY = date("Y",$prelink);
+		$postlinkD = date("d",$postlink);
+		$postlinkM = date("n",$postlink);
+		$postlinkY = date("Y",$postlink);
+		//echo "pre: " .$prelinkD . " " . $prelinkM . " " . $prelinkY;
+		//echo "post: " .$postlinkD . " " . $postlinkM . " " . $postlinkY;
+		/*$minusyear = $year;
+		$plusyear = $year;
+		$minusmonth = $int_month-1;
+		$plusmonth = $int_month+1;
+		if ($int_month == 1) {
+			$minusyear = $year-1;
+			$minusmonth = 12;
+		} elseif ($int_month == 12) {
+			$plusyear = $year+1;
+			$plusmonth = 1;
+		}
+		if ($startDay) {
+			# special day handling
+		} elseif ($startDay) {
+			# special day handling
+		}
+
+		$reflink = "$urlhome?month=$int_month&year=$year";
+		$rel_start = $startDay + $offset; 	
+		$ut = strtotime("$year-$rel_start-$minusmonth");
+		$daysOfPrevMonth=date(t,$ut);
+		echo $daysOfPrevMonth;
+		$minusday = $rel_start - 7;
+		$plusday = $rel_start + 7 ;
+		$unixTime = strtotime("$year-$rel_start-$int_month");
+		$daysInMonth = date("t",$unixTime);
+		echo $daysInMonth;*/
+		$downlink = "$urlhome?month=$prelinkM&year=$prelinkY&type=week&day=$prelinkD&tutor_id=$tutor";
+		$uplink = "$urlhome?month=$postlinkM&year=$postlinkY&type=week&day=$postlinkD&tutor_id=$tutor";
+		/*
+		if ($minusday < 1) {
+			$prev_month = $int_month - 1;
+			if ($prev_month < 1) 
+			{
+				$prev_month = 12;
+				$year -= 1;
+			}
+			$minusday = 28;
+			$downlink = "$urlhome?month=$prev_month&year=$year&type=week&day=$minusday&tutor_id=$tutor";
+		}
+		if ($plusday >= $daysInMonth) {
+			$next_month = $int_month + 1;
+			if ($next_month > 12) {
+				$next_month = 1;
+				$year += 1;
+			}
+			$plusday = 1;
+			$uplink = "$urlhome?month=$next_month&year=$year&type=week&day=$plusday&tutor_id=$tutor";
+		}*/
+		if(date("Y",$pse)!=date("Y",$pse+7*24*60*60))
+			$yearString=date("Y",$pse) . "/" . date("Y",$pse+7*24*60*60);
+		else
+			$yearString=date("Y",$pse);
+			
+		if(date("F",$pse)!=date("F",$pse+7*24*60*60))
+			$monthString=date("F",$pse) . "/" . date("F",$pse+7*24*60*60);
+		else
+			$monthString=date("F",$pse);	
+		
+		if(date("F",$pse)!=date("F",$pse+7*24*60*60) && date("Y",$pse)!=date("Y",$pse+7*24*60*60))
+			{$monthString = date("F",$pse) . " " . date("Y",$pse) . "/"; $yearString = date("F",$pse+7*24*60*60) . " " . date("Y",$pse+7*24*60*60);} 
+		
+		echo '<table border="1" bordercolor="#000000" bgcolor="#ffffff" cellpadding="2" cellspacing="0" ><tr><th colspan="7"><a href="' . $downlink . '"><< previous week</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="' . ( isset($reflink) ? $reflink : '' ) ."&type=$type&day=". (isset($startDay) ? $startDay : '') . '">' . $monthString . ' ' . $yearString . '</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+			<a href="' . $uplink . '">next week >></a></th></tr>';
+
+		$daysOfWeek = array('Sunday','Monday','Tuesday','Wednesday','Thursday','&nbsp; Fri &nbsp;','&nbsp; Sat &nbsp;');
+		echo '<tr>';
+		foreach($daysOfWeek as $day) {
+			echo '<th class="daytd">' . "$day" . '</th>';
+		}
+
+		echo '</tr><tr>';
+	}
+
+	/**
+	 * Outputs table footer
+	 */
+	function tableFooter($month,$year,$int_month,$type,$startDay,$offset,$tutor)
+	{
+
+		$urlhome = substr(strrchr($_SERVER['PHP_SELF'], "/"),1);
+		$minusyear = $year;
+		$plusyear = $year;
+		$minusmonth = $int_month-1;
+		$plusmonth = $int_month+1;
+		if ($int_month == 1) {
+			$minusyear = $year-1;
+			$minusmonth = 12;
+		} elseif ($int_month == 12) {
+			$plusyear = $year+1;
+			$plusmonth = 1;
+		}
+		if ($startDay) {
+			# special day handling
+		} elseif ($startDay) {
+			# special day handling
+		}
+
+		$reflink = "$urlhome?month=$int_month&year=$year";
+
+		$rel_start = $startDay + $offset;
+		$minusday = $rel_start - 7;
+		$plusday = $rel_start + 7;
+		$unixTime = strtotime("$year-$rel_start-$int_month");
+		$daysInMonth = date("t",$unixTime);
+		$downlink = "$urlhome?month=$int_month&year=$year&type=week&day=$minusday&tutor_id=$tutor";
+		$uplink = "$urlhome?month=$int_month&year=$year&type=week&day=$plusday&tutor_id=$tutor";
+		if ($minusday < 1) {
+			$prev_month = $int_month - 1;
+			if ($prev_month < 1) {
+				$prev_month = 12;
+				$year -= 1;
+			}
+			$minusday = 28;
+			$downlink = "$urlhome?month=$prev_month&year=$year&type=week&day=$minusday&tutor_id=$tutor";
+		}
+		if ($plusday >= $daysInMonth) {
+			$next_month = $int_month + 1;
+			if ($next_month > 12) {
+				$next_month = 1;
+				$year += 1;
+			}
+			$plusday = 1;
+			$uplink = "$urlhome?month=$next_month&year=$year&type=week&day=$plusday&tutor_id=$tutor";
+		}
+
+		echo '<tr><th colspan=7><a href="' . $downlink . '"><< previous week</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="' . "$reflink&type=$type&day=$startDay" . '">' . $month . ' ' . $year . '</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+			<a href="' . $uplink . '">next week >></a>';
+		
+		echo '<a name="bottom"></a>';
+		echo '<script type="text/javascript">document.location.href="#bottom";</script>';
+		echo "</th></tr></table>";		
+	}
+
+	/**
+	 * Outputs blank table cell
+	 */
+	function blankCell()
+	{
+		echo '<td class="blankcell"><div title="" style="width: 100px;"></div></td>';
+	}
+
+	/**
+	 * Outputs table cell with passed day of month and appointments for that
+	 * day
+	 */
+	function appointmentCell($currentDayEpoch,$dayarray,$fid,$tutor)
+	{
+		$bgcolor = "";
+		$appointments = "";
+		$lastevent = '';
+		$dom = date("d",$currentDayEpoch);
+		foreach ($dayarray as $time => $event) {
+			$eventdisp = '';
+			$hourclass = 'hour';
+			$actiontxt = 'Schedule a Session for ';
+			if (substr($time,0,2) > 12) {
+				$time = (sprintf("%02d",substr($time,0,2)-12)) . substr($time,2,3) .'pm';
+			}
+			$addtime = $time;
+			# "round" the time.  Comment this line to allow quarter hour scheduling
+			$addtime = preg_replace('/:\d\d/', ':00', $addtime);
+			$title = $addtime;
+			$add = '';
+			if ($event == 'open' || $event == 'unavail' || $event == 'taken') {
+				$hrstatus = $event;
+				if ($event == 'open') {
+					$add = "onclick=\"addevent($currentDayEpoch,'$addtime',$fid,$tutor);\"";
+				} else {
+					$actiontxt = '';
+				}
+			} else {
+				$hrstatus = 'mine';
+				$actiontxt = 'Cancel Your Session for ';
+				if ($event == $lastevent) {
+					$eventdisp = '.';
+				} else {
+					$eventdisp = $event;
+					$lastevent = $event;
+				}
+				$add = "onclick=\"delevent($currentDayEpoch,'$addtime',$fid,$tutor);\"";
+			}
+			if (substr($time,2,3) != ':00') {
+				$hourclass = 'qtr';
+				$time = '&nbsp;';
+			}
+			$mouseover = $actiontxt ? "$actiontxt $title" : '';
+			$appointments .= "<div class='$hourclass $hrstatus' $add title='$mouseover'>$time  $eventdisp</div>";
+		}
+
+		echo '<td ' . $bgcolor . '  class="lt" style="vertical-align:top"><span class="dt">' . $dom . '</span>' . $appointments . "</td>	";
+	}
+}
+
+/* Start of main code
+ **************************************************************************
+ */
+class Main {
+
+	var $t_unavail;
+	
+	function tutorIsAvailable($date, $time)
+	{
+		
+		//receives date in mysql format YYYY-MM-DD
+		
+		//echo $date;
+		//echo $time;exit;
+		$curr_timestamp =strtotime("$date $time");
+		
+		//echo "<br> DOING ".date("Y-m-d G:i:s", $curr_timestamp)."<br>";
+		
+		foreach ($this->t_unavail as $dates)
+		{
+			
+			
+				if(isset($dates['dow']))
+				{
+				//echo date("N",$curr_timestamp). "::::::".$dates['dow']."<br>";
+					if(date("N",$curr_timestamp)!=$dates['dow'])
+						continue;
+				}
+			
+			
+			$start_timestamp = strtotime($dates["start_date"]." ".$dates["start_time"]);
+			$end_start_timestamp = strtotime($dates["start_date"]." ".$dates["end_time"]) - 900;
+			
+			$end_timestamp = strtotime($dates["end_date"]." ".$dates["start_time"]);
+			$end_end_timestamp = strtotime($dates["end_date"]." ".$dates["end_time"]) - 900;
+			
+			
+			for($i = $start_timestamp, $j=$end_start_timestamp; $i<= $end_timestamp; $i=$i+86400, $j=$j+86400)
+			{
+				
+				
+						if($curr_timestamp >= $i && $curr_timestamp <=$j)
+				{
+					
+					return false;
+				}
+			}
+			
+			
+			
+			
+		/*	$start_timestamp = strtotime($dates->start_date." ".$dates->start_time);
+			$end_start_timestamp = strtotime($date->start_date." ".$dates->end_time);
+			
+			$end_timestamp = strtotime($dates->end_date." ".$dates->start_time);
+			$end_end_timestamp = strtotime($date->end_date." ".$dates->end_time);
+			
+			
+			for($i = $start_timestamp, $j=$end_start_timestamp; $i<= $end_timestamp; $i=$i+86400, $j=$j+86400)
+			{
+			//check if date is within the start and end range	
+				//$end_start_timestamp = $end_start_timestamp
+				$overlap = max($i, $curr_timestamp) - min($j, $end_curr_timestamp);
+				
+				if ($overlap > 0)
+				{
+					
+					return false;
+				}
+			}*/
+
+		}
+		
+		
+		
+		return true;
+	}
+	
+	//function checkAvailabilityInDate($)
+	
+	
+	function main($appointmentArray,$month,$iyear,$type,$startDay,$StartStop,$Unavail,$fid,$t_unavail,$tutor) {
+		// If month is numeric, convert it to string (will already have been validated)
+		$this->t_unavail = $t_unavail;
+                $newLine = 0;
+	//	echo "<pre>";
+	//	print_r($this->t_unavail);
+	//	echo "</pre>";
+		
+		$calculations =  new Calculations;
+		$int_month = $month;
+		if($int_month==1)
+		{	
+			$prev_month=12;
+		}
+		else
+			$prev_month=$int_month-1;
+			
+		if($int_month==12)
+		{
+			$next_month=1;
+		}
+		else
+			$next_month=$int_month+1;
+			
+		if(is_numeric($month)) $month = $calculations->numMonthToString($month);
+	
+		// Set needed date information
+		$year = $iyear;
+		$unixTime = strtotime("$startDay " . $month . " " . $year);
+		$daysInMonth = date("t",$unixTime); //number of days in month
+		//echo $daysInMonth;					//doesn't work well for trans
+		// Offset is needed so blank cells can be output for the calendar.  It is
+		// a numerical representation of the day of week
+		//$offset = date("w",$unixTime);
+		//echo $offset ."ofset";
+		// Adjust $startDay to nearest sunday
+		/*if (date("w",$unixTime) > 0) {
+			$offset = -1 * date("w",$unixTime);
+		}
+*/
+		// Sort array with user defined function
+		usort($appointmentArray, 'sortByDate');
+
+		$template = new Template;
+
+		// Output table header
+	
+
+		$cellsToOutput = $calculations->cellsToOutput($daysInMonth,isset($offset)?$offset:0);
+		//$cellsToOutput=98;
+		$dayOfMonth = $startDay; //which day in month should start with printing out appts
+		$printStart = $startDay;	//should be $dayOfMonth	
+		$printEnd = ($startDay + 6) % $daysInMonth; //should be ($dayOfMonth+6)% $daysInMonth;
+		
+		
+		$printStartEpoch = strtotime("$printStart ".$month . " " . $year);
+		$printEndEpoch = $printStartEpoch + 6*24*60*60;
+		$template->tableHeader($printStartEpoch,$type,$tutor);
+		
+		$urlhome = substr(strrchr($_SERVER['PHP_SELF'], "/"),1);
+
+		//for ($i = 0; $i < $cellsToOutput; $i++) 
+		$startingTime = strtotime($printStart . " " . $month . " " . $iyear);
+		for ($i = 0; $i < 7; $i++) 
+		{
+			// Output either a blank box, or a box with the date in it
+			//if ($dayOfMonth <=0 || ($dayOfMonth > $daysInMonth && $type == 'month') ) {
+			
+			//$currentDay = ($startDay+$i)%($daysInMonth+1);
+			$currentDay = date("d", $startingTime+$i*24*60*60);
+			$currentMonth = date("n", $startingTime+$i*24*60*60);
+			$currentYear = date("Y", $startingTime+$i*24*60*60);
+			
+			$currentDayEpoch = $startingTime+$i*24*60*60;
+			$currentMonthEpoch = $startingTime+$i*24*60*60;
+			$currentYearEpoch = $startingTime+$i*24*60*60;
+			
+			//echo date("Y-n-j", $currentDayEpoch) . date("D",$currentDayEpoch) . "<br/>";
+			if($currentDayEpoch>=$printStartEpoch && $currentDayEpoch<=$printEndEpoch)
+			
+			//$template->blankCell();
+			//} else {
+				// Check first element of array for the current day of month
+				// If there is a match, add the appointment and remove from array
+			{	
+				$dayarray= array();
+				// Prefill off hours
+				// make the default 3pm til 11pm Monday through Thursday,
+				// and 9 am to 10 pm on Sundays. Make Fri and Sat unavailable.
+				$startHour = 9.00;
+				$endHour = 22.75;
+				
+				if (isset($StartStop[$dayOfMonth]) && $StartStop[$dayOfMonth]['start'] > 0) {	//always empty
+					$startHour = $StartStop[$dayOfMonth]['start'];
+					$endHour = $StartStop[$dayOfMonth]['stop'];
+				} else {
+					// use default
+					$unixTime = strtotime($dayOfMonth . " " . $month . " " . $iyear);
+					if (date("w", $unixTime) == 0) {
+						// sunday
+						$startHour = 9.00;
+						$endHour = 21.75;
+					} elseif (date("w", $unixTime) >= 5) {
+						// fri or sat
+						$startHour = 23.75;
+						$endHour = 0;
+					} else {
+						// mon-thu
+						$startHour = 15.00;
+						$endHour = 22.75;
+					}
+				}
+				$startofday = 9.00;
+				$endofday = 22.75;
+				for ($ii=$startofday; $ii<=$endofday;$ii += .25) {
+					$hourstat = 'open';
+					$ii_hrs = floor($ii);
+					$ii_dec = $ii - $ii_hrs;
+					$ii_mins = $ii_dec * 60;
+					/*PROVERI!!!*/
+					if ($ii<$startHour || $ii>$endHour || !$this->tutorIsAvailable("$currentYear-$currentDay-$currentMonth", "$ii_hrs:$ii_mins:00")) {
+						$hourstat = 'unavail';
+					}
+					$dayarray[timeref($ii)] = $hourstat;
+				}
+				
+				// Insert scheduled events
+				while ($appointmentArray[0]['date'] <= $currentDayEpoch) 
+				{
+					
+					$shift = array_shift($appointmentArray);
+					if (!is_array($shift)) {
+						break;
+					}
+					if ($shift['date'] < $currentDayEpoch) {
+						
+						continue;
+					}
+					// This makes it floating point...
+					$shift['hrs'] *= 1;
+				//	echo "db day is " . date("l",$shift['date'])."<br>";
+					if (!IsEmpty($shift['start'])) {
+						$pcs = explode(":", $shift['start']);
+						$startTime = sprintf("%02d:%02d", $pcs[0], $pcs[1]);
+						$typeofEvent = 'taken';
+						if ($shift['fid'] == $fid) {
+							$typeofEvent = $shift['name'];
+						}
+						$dayarray[$startTime] = $typeofEvent;
+						$numHrs = $shift['hrs'];
+						while ($numHrs > 0) {
+							$dayarray[$startTime] = $typeofEvent;
+							$pcs = explode(":", $startTime);
+							$pcs[1] += 15;
+							if ($pcs[1] >= 60) {
+								$pcs[0] += 1;
+								$pcs[1] = 0;
+							}
+							$startTime = sprintf("%02d:%02d", $pcs[0], $pcs[1]);
+							$numHrs -= .25;
+						}
+					}
+				}
+				// Do the same for Unavailable
+				while (isset($Unavail[0]) && $Unavail[0]['date'] <= $currentDayEpoch) {
+											
+					$shift = array_shift($Unavail);
+					if (!is_array($shift)) {
+						break;
+					}
+					if ($shift['date'] < $currentDayEpoch) {
+						continue;
+					}
+					// This makes it floating point...
+					$shift['hrs'] *= 1;
+					
+					if (!IsEmpty($shift['start'])) {
+						$pcs = explode(":", $shift['start']);
+						$startTime = sprintf("%02d:%02d", $pcs[0], $pcs[1]);
+						$typeofEvent = 'unavail';
+						$dayarray[$startTime] = $typeofEvent;
+						$numHrs = $shift['hrs'];
+						while ($numHrs > 0) {
+							$dayarray[$startTime] = $typeofEvent;
+							$pcs = explode(":", $shift['start']);
+							$pcs[1] += 15;
+							if ($pcs[1] >= 60) {
+								$pcs[0] += 1;
+								$pcs[1] = 0;
+							}
+							$startTime = sprintf("%02d:%02d", $pcs[0], $pcs[1]);
+							$numHrs -= .25;
+						}
+					}
+			}
+		
+				//}//Uncomment the line below to add the day link below the events in the day cell
+				//$appointments .= "<a href='$daylink'>day</a><br />";
+				//if ($dayOfMonth >= $printStart && $dayOfMonth <= $printEnd) {
+				if($currentDayEpoch>=$printStartEpoch && $currentDayEpoch<=$printEndEpoch)
+					$template->appointmentCell($currentDayEpoch,$dayarray,$fid,$tutor);
+				
+
+				$appointments = '<br />';
+			}
+			$dayOfMonth++;
+			$newLine++;
+		}
+		
+		$template->tableFooter($month,$year,$int_month,$type,$startDay,isset($offset)?$offset:0,$tutor);
+
+		unset($appointmentArray);
+		}
+		
+	}	
+		// fill blank tail cells
+		/*$deltacells = $daysInMonth - $printStart;
+		if ($deltacells < 9) {
+			$deltacells = 6 - $deltacells;
+			while ($deltacells > 0) {
+				$template->blankCell();
+				$deltacells--;
+			}
+		}*/
+	
+		
+	
+
+
+
+
+//$type = month, week, day_rate, day_simple.
+function client_cal($SI, $arSS, $arUnav, $famid, $sundate, $t_unavail, $tutor) {
+	//$month,$iyear,$type='week',$startDay,$rates=0
+	
+	
+	$dA = date_parse($sundate);
+	$month = $dA['month'];
+	$iyear = $dA['year'];
+	$startDay = $dA['day'];
+	$type = 'week';
+
+	// If the expected variable isn't an array type, then create a blank array
+	// to avoid unexpected errors
+	if (!is_array($SI)) $SI = array();
+	
+
+	// Make sure that the month supplied is valid.  If it isn't, use the current month
+	$validation = new Validation;
+	if (!$validation->isMonth($month)) $month = date("F");
+
+	 
+	// Call the main code
+	$main = new Main($SI,$month,$iyear,$type,$startDay,$arSS,$arUnav,$famid, $t_unavail, $tutor);
+}
+
+?>

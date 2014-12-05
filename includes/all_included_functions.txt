@@ -1,0 +1,267 @@
+includes/phtml_files/vworker_includes
+/**********************************************************
+- putCheckBoxInputEvent($disName, $varName, $varChecked, $varEvent)
+- putSelectInputShow($disName, $varName, $disArray, $varSelected, $strComment, $special, $labelFirst ='', $show,$set)
+- putTextFieldShow($disName, $varName, $varLen, $disLen, $varVal, $strComment, $special,$show,$set)
+- putSelectInputOnChange($disName, $varName, $disArray, $varSelected, $strComment, $special, $labelFirst ='',$event)
+- get_sched_dates1($dow, $startdate, $enddate, $other='')
+- non_tut_session_mod_update($ses_id, $add_date, $start_time, $end_time, $tutor_id, $name...)
+- class_add_student($student_id, $class_id, $paid, $due, $learning_disability, $extended_time, $tutor_id, ...
+- checkIfStudentExists($first_name, $lastname, $fid) {
+- just_fam_search ($style="drop", $field_name="family_id", $fam_id=0, $label="", $callback="")
+- put_fam_search ($style="drop", $field_name="fid", $fam_id=0, $label="", $callback="")
+- fam_menu_updated($style="student", $inputname="sid", $fam_id=0, $label="", $other="", $addevent="")
+- put_student_search ($style="drop", $field_name="student_id",  $student_id=NULL, $label="" , $callback="")
+- just_student_search ($style="drop", $field_name="student_id",  $student_id=NULL, $label="" , $callback="")
+- studentid_menu_updated ($selected_value=NULL, $name="student_id", $label, $callback="")
+- addContact($contact, $username, $password)
+
+
+includes/pttec_includes
+/**********************************************************
+Function List
+useHTTPS(): force the user to use the https version of the page is using http
+makeCurrency( $money ) removes anything other than numbers and decimal point from variable money
+class Uplinks( $folder="", $postion=0, $drop_position=0, $label="", $link="", $is_in_drop_down=false )
+printLink( $link, $print_drop_down_parent = false )
+generate_navbar2( $links = "" )
+generate_navbar( $links = "" )
+get_top_links2( $folder )
+printarobj($temparray)
+archive($arch_id, $strTableName, $field='id', $max_fields = 1)
+get_item_name($id,$table)
+select_testprep_student
+just_select_test
+select_test
+select_test_source
+get_testprep_student($student_id, $testprep_id=NULL, $opts)
+archive($id,$strTableName)
+ses_mod_loc
+get_item_name($id,$table)
+put_sorting_header($label, $field, $other="")
+get_ses_rates
+23 - gettutBillInfo_2010 (get's the billing info for a tutor)
+258 - client_tut_del (deletes a session )
+274 - session_del (deletes a session using just the session id )
+277 - session_add2
+280 - session_add ( add a tutoring session )
+316 - tutor_info($tut_id) - given a tutors id, returns an array with all of the tutor's information
+391 - get_top_links
+put_ptts_header
+put_ptts_footer
+580 - get_tut_info($tutor_id) identical to tutor_info OOPS!
+595 get_fam_name($fam_id){
+622 get_tutor_id - used to select a tutor
+get_location_id
+location_menu
+640 - tutorsid_menu($selected_value, $name="tid",$callback) puts a menu for tutors
+666 get_student_id($selected_value=NULL, $name="student_id", $callback="", $opts=null){
+670 -  studentid_menu($selected_value=NULL, $name="student_id", $callback="", $opts=null)get student info functions
+670 - fam_menu($style, $inputname, $fam_id, $label, $other) - create a pull down menu for selecting a family
+712 - put_fam_menu($style="student", $inputname="fid", $fam_id=0, $label="", $other="")
+  this actually puts the menu on the page
+725 -  reqToVars() - takes all of the request variables and makes them global variables
+735 - gettutBillInfo (calls gettutBillInfo2010 or gettutBillInfo2011 depending on the year)
+750 - gettutBillInfo_2011 (get's the billing info for 2011 and beyond.)
+tableview($strTable, $strFields, $arColumn, $strRestrictions, $booledit, $sortby, $sortorder, $tableclass, $other){
+753 - tableview (shows all of the selected column in a table, sortable by clicking title, and with action column)
+948 - get_strNotUsed (gets the values not to put in the autotables from PT_Table_Info)
+963 - get_test_type_info (gets the information about a type of test SAT, ACT, HSPT, etc...)
+show_sec_results($testprep_id, $section_id=NULL, $test_id=0, $section_num=0, $testhw="hw", $other=NULL)
+just_location_menu($location_id=NULL, $varName="location_id", $first_label="select a location", $strComment=NULL, $manrp = NULL)
+get_location_menu($location_id = NULL, $disName='Location', $varName='location_id', $labelFirst='select test', $special="required")
+payment_process($family_id, $amount, $other=NULL)
+saveStripeCustomerId($family_id, $stripe_id)
+get_test_ini($test_id, $other = 0)
+get_test_type($test_id)
+show_sec_results($testprep_id, $section_id=NULL, $test_id=0, $section_num=0, $testhw="hw", $other=NULL)
+4036 - format_phoneN($phone)
+
+get_test_ini($test_id, $other = 0){
+1001 - ptts2_mail (for now simply takes calls "mail")
+xxxx - get_amount_due($family_id) returns to total amount due for a family
+xxxx saveStripeCustomerId($family_id, $stripe_id)
+get_test_id(...) puts the test_id menu
+put_testprep_right_links()
+send_passed_due($fid,$month,$year)
+put_fam_billing_info($fid,$status)
+mmLoadMenus()
+put_new_header($page_title, $strback, $page_properties)
+put_new_footer()
+put_rlinks()
+MySQL_PaulTheTutor_Connect()
+get_strBack()
+phptohtm()
+getarBillInfo($month, $year, $sid)
+getClientCalInfo($month, $year, $sid, $tid=1)
+getClientCalInfo($month, $year, $sid, $tid=1)
+getStudentsName($sid)
+checkStudentsPWord($sid, $pword)
+getCourses()
+putCSSNoLink()
+putCSSLink($strBack)
+putMobileCSSLink($strBack)
+putLeftBox()
+putPTTFooter()
+getStudentSched($sid)
+getStudentInfo()
+putAdminLinks()
+getstudentsecinfo($sid)
+getMainName($fid)
+putParentsLinks()
+putPTTHeader($pagetitle, $strBack)
+putPTTMobileHeader($pagetitle, $strBack,$other)
+getSATQResult($ans, $cor, $message, $spr)
+getSATval()
+getSecRawScore($test_id, $sid, $section_type, $other)
+getReportedScore($raws, $type, $essay)
+putChalkBoardSmall()
+client_del($del_date, $del_time, $del_fid, $del_tid)
+client_add($add_date, $start_time, $add_fid, $hours, $rate, $tid)
+return_sched_details($shed_id,$style = "string", $css_style = "sched_table_style"
+
+
+
+**********************************************************/
+includes/phtml_files/Webit_Includes.phtml
+**********************************************************
+create_comment($table_name, $column_name ,$id)
+add_comment($table_name, $column_name, $row_id, $comment)
+analytics()
+show_family_sname($family_id)
+get_family_sname(fid)
+get_family_snames(family_id) - returns a string with all students in a family
+get_fam_sfnames($family_id)
+get_family_sid(fid)
+get_student_info($sid) - returns an array with all of the information about a student 
+get_student_name($student_id) - Returns students full name as a string
+get_student_names($student_id) - Returns all students of family as string
+get_student_fid($student_id)
+get_tutor_appointments($tut, $start_date, $end_date, $opts=null)
+ptts_mail($email, $subject, $msg, $opts=null)
+get_student_fid(student_id) - returns the family id for a student
+mail_alert($to, $subject, $msg, $type)
+send_sms($tutor_id, $msg)
+get_rates()
+output_rates($asString=false)
+get_tutor_name($tid, $opts=null)
+get_testimonials()
+random_testimonial($return=false)
+vacation_clear_cal($tid, $start_date, $end_date, $opts=null)
+format_date_db( formates a date from a specified format to a database format)
+format_date_print (formates a date from a specified format to a print format, for the date picker popup)
+format_time_db (formates a time from am/pm format to a database format)
+format_time_db_input($time, $ampm)
+format_time_print (formates a date from a database format to a am/pm print format)
+get_sched_dates (returns an array with all of the dates indicated by a schedule)
+adddate($date,$days=0,$months=0,$years=0,$seconds=0,$minutes=0,$hours=0)
+header_location (cleans the output buffer and makes header(Location))
+web_send_email($emailFrom="", $emailTo, $emailSubject, $emailContent) - sends a vcard email
+web_send_vcard_email($vcard_content, $name="", $email_from = "")
+sendParentvCards($fid) - create the vcards for $fid family_id and then send them with web_send_email function
+session_mod($ses_id, $add_date, $start_time, $fid, $hours, $rate, $pay, $tid, $student_id, $other)
+getSecRawScore_New($test_id, $testprep_id, $section_type, $other='')
+getReportedScore_New($rawscore, $sectiontype, $essay_score, $test_number)
+non_tut_session_add($add_date, $start_time, $end_time, $tutor_id, $name, $email, $phone, $comments, $sched_id='', $paid=0, $rate=0, $opts=null)
+non_tut_session_del($ses_id, $opts=null)
+non_tut_session_mod($ses_id, $add_date, $start_time, $end_time, $tutor_id, $name, $email, $phone, $comments)
+753 - non_tut_session_add
+non_tut_hours(
+time_diff($end_time, $start_time)
+fam_contact($fam_id,$link="Family Information",$style="")
+billing_history($family_id, $type = 'all', $folder="admin")
+month_overview($month, $year, $tid='', $with_action=1)
+get_fam_students($fid)
+get_fam_name_last_first($fam_name)
+zz_archive_data($move_id,$tablename,$tablename_archive)
+zz_restore_archive_data($move_id,$tablename,$tablename_archive)
+last_saturday_of_last_month($start_date)
+
+**********************************************************************
+includes/phtml_files/MySQL functions
+**********************************************************************
+array_addslashes(&$arr)
+MySQL_Connection($chost, $cusername, $cpassword, $cdatabase)
+MySQL_CheckInserts($strTableName, $arHTTPFields, $arFieldNames, $arFieldValues, $strNotUsed, $strUsed, $tdStyle)
+InsertFields($strTableName, $arHTTPFields, $arMandFields, $strNotUsed, $tdStyle)
+UpdateFields($strTableName, $arHTTPFields, $arMandFields, $strNotUsed, $tdStyle, $strWhere)
+getMandFields($temptablename, $arMandFields, $strNotUsed)
+setDefaultFields($temptablename, $arHTTPFields, $strNotUsed)
+MySQL_MultiForms($strTableName, $arFieldNames, $arFieldComments, $strUse, $strNotUsed, $tdStyle, $numRows)
+MySQL_BlankForm($strTableName, $arFieldNames, $arFieldsVals, $arFieldComments, $arHidden, $strNotUsed, $formName)
+MySQL_JustForm_End($arRequired, $formName, $opts=null)
+MySQL_JustForm($strTableName, $arFieldNames, $arFieldsVals, $arFieldComments, $arHidden, $strNotUsed, $formName, $inputIndex='')
+mysql_set_str($strColumn, $strRemove, $varConnection)
+mysql_set_array($strColumn, $strRemove, $varConnection)
+putsetvals($strSet, $arAdd)
+removesetvals($strSet, $arRemove)
+MySQL_SetToArray($strFieldsType)
+mysql_dis_date($mysqlDate)
+mysql_store_date($arDate)
+MySQL_SendEmail($strTableName)
+runquery($QStr)
+singlequery($tQStr)
+rowquery($tQStr)
+MySQL_fillArray($strKey, $strField, $strTableName,$where)
+setDisplayFieldVals($strField)
+getIgnoreColumns($strTableName, $strTableInfo)
+
+****************************************************************************
+includes/phtml_files/Paul13Includes
+****************************************************************************
+getfolder($place, $address, $other)
+gettodaydate($other, $other2)
+ZeroFill($intVal, $intPlaces)
+SecstoHMS($intSecs)
+getBackButton()
+getXBackButton($intBack)
+checkLogons($idcookie, $where_to)
+printRS($tempRS)
+printarray($temparray)
+IsEmpty($varString)
+ConvertFromNull($varString)
+getPassword($minLen, $maxLen)
+view_table($strTable, $strFields, $strRestrictions, $booledit, $other)
+list_emails($strTable, $strField, $strRestrictions, $other)
+email_all_link($strTable, $strField, $strRestrictions, $other)
+sat_class_roster($classid,$editable,r)
+seminar_roster($semid,$editable,$other)
+timeAR,$other)ampmto24(${
+// printarray($timeAR)
+***************************************************************************
+includes/phtml_files/FormFunctions
+***************************************************************************
+emailverify($form, $email1, $email2, $message = "Email addresses do not match", $other)
+verifyEmailsFor".$form."()
+attachSubmitHandlerFor".$form."()
+putTextField($disName, $varName, $varLen, $disLen, $varVal, $strComment, $special) 
+putHiddenField($varName, $varVal)
+putPasswordEZ()
+putPasswordInput($disName, $varName, $varLen, $disLenputCarrierSelect($disName, $varName, $varLen, $disLen, $varVal,$disLabel='', $special=''), $varVal,$disLabel='', $special='')
+putFamilySelect($disName, $varName, $varLen, $disLen, $varVal,$disLabel='', $special='')
+putTextBoxField($disName, $varName, $varLen, $varRows, $varVal,$disLabel, $special)
+putTextBox($disName, $varName, $varLen, $varRows, $varVal,$disLabel, $special)
+SelectFromQuery($QStr, $disName, $varName, $disArray, $varSelected, $strComment, $special, $labelFirst)
+putSelectInput($disName, $varName, $disArray, $varSelected, $strComment, $special, $labelFirst ='')
+putCheckBoxInput($disName, $varName, $varChecked)
+putSubmit()
+putSubmitClear()
+putTextInput($disName, $varName, $varLen, $disLen, $varVal, $strComment, $special)
+putTimeField2($disName, $varName, $varVal,$strComment, $special = '')
+putTimeField($disName, $varName, $strComment, $varVal, $form_name, $other1, $other2)
+putDateField($disName, $varName, $varVal, $strComment, $special)
+putDateFieldPopup($disName, $varName, $varVal, $strComment, $special)
+putDateCell($varName)
+putMonthsSelect($varName)
+putYearsSelect($varName)
+putCheckBoxesInput($disName, $varName, $disArray, $strSelecteds, $intRowLen, $strComment, $special)
+getEmptyFields ($arFields, $arMandKeys)
+getEmptyFields2D ($arFields, $arMandKeys)
+
+
+
+
+
+
+
+

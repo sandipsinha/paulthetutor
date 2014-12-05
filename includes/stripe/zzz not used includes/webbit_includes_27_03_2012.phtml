@@ -1,0 +1,1316 @@
+<?
+/**********************************************************
+Function List
+get_family_sname(fid)
+get_family_sid(fid)
+get_student_info($sid) 
+get_student_name($student_id) - Returns students full name as a string
+get_student_fid(student_id) - returns the family id for a student
+ptts_mail($email, $subject, $msg, $opts=null)
+format_date_db( formates a date from a specified format to a database format)
+format_date_print (formates a date from a specified format to a print format, for the date picker popup)
+format_time_db (formates a time from am/pm format to a database format)
+format_time_print (formates a date from a database format to a am/pm print format)
+get_sched_dates (returns an array with all of the dates indicated by a schedule)
+header_location (cleans the output buffer and makes header(Location))
+web_send_email(sends an email)
+session_mod($ses_id, $add_date, $start_time, $fid, $hours, $rate, $pay, $tid, $student_id, $other)
+web_send_email($emailFrom="", $emailTo, $emailSubject, $emailContent) - sends a vcard email
+sendParentvCards($fid) - create the vcards for $fid family_id and then send them with web_send_email function
+get_fam_students($fid)
+get_fam_name_last_first($fam_name)
+753 - non_tut_session_add
+non_tut_hours(<add|edit>, <@FORMDATA='$_REQUEST'>, <manditory_fields=''>, <ignored_fields=''>, <tdstyle=''>, <where=''>)
+zz_archive_data($move_id,$tablename,$tablename_archive)
+zz_restore_archive_data($move_id,$tablename,$tablename_archive)
+last_saturday_of_last_month($start_date)
+**********************************************************/
+Zend_Loader::loadClass('Zend_Mail');
+
+
+/*----------------------------------------------------------------------------
+ * get_family_sname($family_id)
+ takes student id
+ returns string with students name
+ *--------------------------------------------------------------------------*/
+function get_family_sname($family_id){
+	$student_id = get_family_sid($family_id);
+	$sname = get_student_name($student_id);
+	if(isEmpty($sname)){
+		$sname = "No Student";
+	} 
+	return $sname;
+}
+/*----------------------------------------------------------------------------
+ * get_family_sid($family_id)
+ takes student id
+ returns string with students name
+ *--------------------------------------------------------------------------*/
+function get_family_sid($family_id){
+	$student_id = singlequery("select min(id) from PTStudentInfo_New where fid = $family_id");
+	if(isEmpty($student_id)){
+		$student_id = NULL;
+	} 
+	return $student_id;
+}
+
+/****************************************************************************************
+ * return a studen's info as an array
+ *
+ * This function takes a student_id and returns all the student's info.
+ * @param int $sid Student ID
+ * @return array $student_info array of student info, basically the DB row with a short_name
+ *****************************************************************************************/
+function get_student_info($sid) {
+  $r = mysql_query("SELECT * FROM PTStudentInfo_New WHERE id = $sid");
+  if(isEmpty($r)) return false;
+  $student_info = mysql_fetch_assoc($r);
+  $student_info['short_name'] = $student_info['first_name'] . " " . substr($student_info['last_name'], 0, 2);
+  $student_info['full_name'] = $student_info['first_name'] . " " . $student_info['last_name'];
+  return $student_info;
+}
+
+/*----------------------------------------------------------------------------
+ * get_student_name($student_id)
+ takes student id
+ returns string with students name
+ *--------------------------------------------------------------------------*/
+function get_student_name($student_id){
+	$arStud = get_student_info($student_id);
+	if(isEmpty($arStud['full_name'])){
+		$SName = "No Student";
+	} else {
+		$SName = $arStud['full_name'];
+	}
+	return $SName;
+}
+/*----------------------------------------------------------------------------
+ * get_student_fid($student_id)
+ takes student id
+ returns student's family's id
+ *--------------------------------------------------------------------------*/
+function get_student_fid($student_id){
+	$arStud = get_student_info($student_id);
+	if(isEmpty($arStud['fid'])){
+		$fid = 0;
+	} else {
+		$fid = $arStud['fid'];
+	}
+	return $fid;
+}
+
+
+
+/**
+ * return an array of appointments for a given tutor_id
+ * 
+ * This function finds all single tutoring appointments, single non-tutoring appointments,
+ * and recurring appointments for a tutor, within a time period.
+ * @param int $tut Tutor ID for which the results will be returned.
+ * @param string $start_date Y-m-d format (ex: 2011-01-20) date to start finding appointments
+ * @param string $end_date Y-m-d format (ex: 2011-03-23) date to end finding appointments
+ * @param array $opts optional array of configuration options (which types should be returned).
+ * @return array $appts an array of dates, each an array of appointment arrays.
+ */
+function get_tutor_appointments($tut, $start_date, $end_date, $opts=null) {
+  if (!$opts || !is_array($opts)) {
+    $opts = array('tutor'=>true, 'other'=>true, 'other-recur'=>false);
+  } // if $opts is not set (properly)
+  // now add missing required attributes to $opts (default to false)
+  isset($opts['tutor']) || $opts['tutor']=false;
+  isset($opts['other']) || $opts['other']=false;
+  isset($opts['other-recur']) || $opts['other-recur']=false;
+  
+  // get individual tutoring and non-tutoring appointments
+  if ($opts['tutor'] && $opts['other']) { // both tutor and other
+    $query = "(SELECT 'tutor' AS type, a.id, a.date, a.start_time, a.hours, a.rate, a.pay, a.name, a.tid AS tutor_id, comments FROM PTAddedApp a WHERE a.date >= '".$start_date."' AND a.date <= '".$end_date."' AND a.tid = ".$tut.") UNION ALL (SELECT 'other' AS type, o.id, o.date, o.start_time, HOUR(SUBTIME(o.end_time, o.start_time))+(MINUTE(SUBTIME(o.end_time, o.start_time))/60) as hours, 0 as rate, 0 as pay, o.`name`, o.tutor_id, comments FROM PT_Other_Appt o WHERE o.date >= '".$start_date."' AND o.date <= '".$end_date."' AND o.tutor_id = ".$tut.") ORDER by date, start_time ASC";
+  } elseif ($opts['tutor']) { // only tutor
+    $query = "SELECT 'tutor' AS type, a.id, a.date, a.start_time, a.hours, a.rate, a.pay, a.name, a.tid AS tutor_id, comments FROM PTAddedApp a WHERE a.date >= '".$start_date."' AND a.date <= '".$end_date."' AND a.tid = ".$tut." ORDER by date, start_time ASC";
+  } elseif ($opts['other']) { // only other
+    $query = "SELECT 'other' AS type, o.id, o.date, o.start_time, HOUR(SUBTIME(o.end_time, o.start_time))+(MINUTE(SUBTIME(o.end_time, o.start_time))/60) as hours, 0 as rate, 0 as pay, o.`name`, o.tutor_id, comments FROM PT_Other_Appt o WHERE o.date >= '".$start_date."' AND o.date <= '".$end_date."' AND o.tutor_id = ".$tut." ORDER by date, start_time ASC";
+  } // if $opts
+  if(!($aptres = mysql_query($query)))
+    echo "<br>Query:  $query <BR>" . mysql_error() . "in ".__FILE__. " on line ".__LINE__."<br>\n";
+  while ($apt=mysql_fetch_assoc($aptres)) {
+    $appts[$apt['date']][]=$apt;
+  }
+
+  // Recurring non-tutoring appointments
+  if ($opts['other-recur']) {
+    $query = "SELECT *, HOUR(SUBTIME(end_time, start_time))+(MINUTE(SUBTIME(end_time, start_time))/60) as hours FROM PT_Recurring_Appt WHERE tid = '".$tut."' and start_date <= '".$end_date."' AND end_date >= '".$start_date."' ORDER BY start_date, start_time";
+    if(!($result = mysql_query($query)))
+      echo "<br>Query:  $query <BR>" . mysql_error() . "in ".__FILE__. " on line ".__LINE__."<br>\n";
+
+    while($row = mysql_fetch_object($result)) { // while there are recurring events
+      $start_date = strtotime($row->start_date);
+      $end_date = strtotime($row->end_date);
+      for($date = strtotime("this ". $row->day_of_week, $start_date) ; $date <= $end_date; $date = strtotime("+1 week", $date)) {
+        $temp = Array();
+        $temp['type']='recur';
+        $temp['id'] = $row->id;
+        $temp['date']=date("Y-m-d",$date);
+        $temp['start_time'] = $row->start_time ;//"21:00:00";
+        $temp['hours'] =$row->hours;
+        $temp['rate']=0;
+        $temp['pay']=0;
+        $temp['name']= $row->name;
+        $temp['tutor_id']=$row->tid;
+        $temp['comments']=$row->description;
+        $appts[$temp['date']][]=$temp;
+      }
+    }
+  }
+  return $appts; 
+}
+
+/*----------------------------------------------------------------------------
+ * send email, setting appropriate headers -PC
+ *--------------------------------------------------------------------------*/
+function ptts_mail($email, $subject, $msg, $opts=null) {
+  is_string($opts) && $opts=array('headers'=>$opts); //convert to array
+  if (!$opts['from']) // opts not sent, use default from
+    $opts['from'] = array('name'=>'noreply@paulthetutors.com', 'email'=>'noreply@paulthetutors.com');
+  if (is_array($opts) && isset($opts['headers'])) { // attempt to parse From name and address from headers
+    preg_match('/from: .+<(\w+@\w+\.[a-z]+)>/i', $opts['headers'], $test);
+    $opts['from']['email']=$test[1];
+    preg_match('/from: (.*)</i', $opts['headers'], $test);
+    $opts['from']['name']=trim($test[1]);
+  } // end parse attempt
+    $mail= new Zend_Mail(); //Zend mail object allows complex messages to be sent easily.
+    // set who the email is from
+    if (is_array($opts['from'])) { //from is an array, set address and name
+      $mail->setFrom($opts['from']['email'], $opts['from']['name']);
+    } else { // from is simply an address
+      $mail->setFrom($opts['from']);
+    }
+    // development server code
+  if (getenv('APPLICATION_ENV') && getenv('APPLICATION_ENV')== 'development') {
+    if (isset($opts['html']) && $opts['html']) // html email
+      $mail->setBodyHtml("HTML email to: $email<br><br>$msg");
+    else // plaintext email
+      $mail->setBodyText("Text email to: $email\n\n". $msg);
+//    $mail->addTo('packetcollision@gmail.com');
+    $mail->setSubject("PTTS-Dev: ".$subject);
+    $mail->send();
+    return true;
+    // end development server code
+  } else { // production server code
+    if (isset($opts['html']) && $opts['html']) // html email
+      $mail->setBodyHtml($msg);
+    else // plaintext email
+      $mail->setBodyText($msg);
+    $mail->addTo($email);
+    $mail->setSubject($subject);
+    $mail->send();
+    return true;
+  }
+} 
+
+/*
+ * Send alert email to ptts staff
+ */
+function mail_alert($to, $subject, $msg, $type) {
+  $adr='@paulthetutors.com';
+  switch ($type) {
+    case 'add':
+      $adr="add$adr";
+      $name= "AddApt";
+      $reply= "$name <$adr>";
+      break;
+    case 'del':
+      $adr="del$adr";
+      $name= "DelApt";
+      $reply= "$name <$adr>";
+      break;
+    case 'nth':
+      $adr="nth$adr";
+      $name= "NTHour";
+      $reply= "$name <$adr>";
+      break;
+  }
+  ptts_mail($to, $subject, $msg, array('from'=>array('name'=>$name, 'email'=>$adr)));
+}
+  
+
+/*----------------------------------------------------------------------------
+ * send text message to appropriate sms email
+ *--------------------------------------------------------------------------*/
+function send_sms($tutor_id, $msg) {
+  $q="SELECT mobile_phone, domain FROM PT_Tutors LEFT JOIN PT_SMS_domains ON PT_Tutors.carrier_id = PT_SMS_domains.id WHERE PT_Tutors.id = ".$tutor_id;
+  $r = mysql_query($q);
+  if($r && mysql_num_rows($r) > 0) {
+    $row = mysql_fetch_assoc($r);
+    ptts_mail($row['mobile_phone'].'@'.$row['domain'],'',$msg);
+    return true;
+  }
+  return false;
+}
+
+/*----------------------------------------------------------------------------
+ * get tutoring rates and return them in an array
+ *--------------------------------------------------------------------------*/
+function get_rates() {
+  // get rates from database, put in array
+  $r=mysql_query("SELECT * FROM PT_Rates");
+  if (!($r && mysql_num_rows($r))) return false;
+  $ret=array();
+  while($row=mysql_fetch_assoc($r)) {
+    $row['rate'] = (float) $row['rate'];
+    $type = preg_replace('/[^[:alnum:]]/', '_', strtolower($row['name']));
+    $rates[$type]['name'] = $row['name'];
+    $rates[$type]['data'][] = $row;
+  }
+
+ 
+  return $rates;
+}
+
+/*----------------------------------------------------------------------------
+ * output tutoring rates to stdout or return them as string (if passed true)
+ *--------------------------------------------------------------------------*/
+function output_rates($asString=false) {
+  if(!$rates = get_rates()) return false;
+  // actually output things
+  $out = '<ul class="rate_tut">';
+  foreach ($rates AS $type) {
+    $out .= '<li class="rate_tut">'.$type['name'].'<ul class="rate_type">';
+    foreach ($type['data'] AS $rate) {
+      $info = stristr($rate['type'],'%') ? ( '<span class="rate_info">'.sprintf($rate['type'], $rate['rate']) ) : ( '<span class="rate_rate">$'.$rate['rate'].'/hr</span> <span class="rate_info">'.$rate['type']);
+      $out .= '<li class="rate_type">'.$info.'</span>';
+      !!$rate['description'] && $out .= ' - <span class="rate_description">'.$rate['description'].'</span>';
+      echo '</li>';
+    }
+    $out .= '</ul></li>';
+  }
+  $out .= '</ul>';
+  if ($asString) {
+  return $out;
+  }
+  echo $out;
+}
+
+function get_tutor_name($tid, $opts=null) {
+  !is_array($opts) && $opts=array('nick'=>false, 'firsti'=>false, 'first'=>true, 'lasti'=>'true', 'last'=>false);
+  $q="SELECT first_name, last_name, nickname, gc_name FROM PT_Tutors WHERE id='".$tid."'";
+  $r=mysql_query($q);
+  $row=mysql_fetch_assoc($r);
+  $msg = '';
+  isset($opts['cal']) && $opts['cal'] && $msg .= $row['gc_name'] . ' ';
+  isset($opts['nick']) && $opts['nick'] && $msg .= $row['nickname'] . ' ';
+  isset($opts['firsti']) && $opts['firsti'] && $msg .= strtoupper(substr($row['first_name'], 0, 1)) . ' ';
+  isset($opts['first']) && $opts['first'] && $msg .= $row['first_name'] . ' ';
+  isset($opts['lasti']) && $opts['lasti'] && $msg .= strtoupper(substr($row['last_name'], 0, 1)) . ' ';
+  isset($opts['last']) && $opts['last'] && $msg .= $row['last_name'] . ' ';
+  return trim($msg);
+}
+
+
+/*----------------------------------------------------------------------------
+ * get all testimonials
+ *--------------------------------------------------------------------------*/
+function get_testimonials() {
+  $r=mysql_query("SELECT * FROM PTTestimonials WHERE verified=1");
+  if (!($r && mysql_num_rows($r))) return false;
+  while($row=mysql_fetch_assoc($r)) {
+    $rows[]=$row;
+  }
+  return $rows;
+}
+
+/*----------------------------------------------------------------------------
+ * output random testimonial (or return it's data if passed true)
+ *--------------------------------------------------------------------------*/
+function random_testimonial($return=false) {
+  $rows=get_testimonials();
+  $row = $rows[mt_rand(0,count($rows)-1)];
+  if ($return) return $row;
+  echo '<span class="testimonial">"'.$row['testimonial'].'"</span> <span class="testimonial-attrib"> - <span class="testimonial-author">'.$row['name'].'</span></span>';
+  return true;
+}
+
+/*----------------------------------------------------------------------------
+ * Remove all schedules that fall during a vacation.
+ *--------------------------------------------------------------------------*/
+function vacation_clear_cal($tid, $start_date, $end_date, $opts=null) {
+ !is_array($opts) && $opts = array('email_paul'=>false,'email_tut'=>false);
+ 
+  // first delete all sessions for the given day
+  $q = 'SELECT id FROM PTAddedApp WHERE tid='.$tid.' AND (date >= "'.$start_date.'" AND date <= "'.$end_date.'")';
+  if (!$r = mysql_query($q)) return false;
+  while ($row = mysql_fetch_assoc($r)) {
+    session_del($row['id'], $opts);
+    #echo "deleting session #$row[id]<br>";
+  }
+
+  // then delete all non-tutoring appointments for the given day
+  $q = 'SELECT id FROM PT_Other_Appt WHERE tutor_id='.$tid.' AND (date >= "'.$start_date.'" AND date <= "'.$end_date.'")';
+  if (!$r = mysql_query($q)) return false;
+  while ($row = mysql_fetch_assoc($r)) {
+    non_tut_session_del($row['id'], $opts);
+    #echo "deleting non-tut session #$row[id]<br>";
+  }
+
+  // finally delete in/out hours 
+  $q = 'SELECT * FROM PT_SchedSS_Norm WHERE tutor_id='.$tid.' AND !( end_date < "'.$start_date.'" OR start_date > "'.$end_date.'")';
+  if (!$r = mysql_query($q)) return false;
+  while ($row = mysql_fetch_assoc($r)) {
+    #echo "need to split schedule #$row[id]<br>";
+    switch(true) { // detect which kind of split we need to do
+      case (strtotime($row['start_date']) >= strtotime($start_date) && strtotime($row['end_date']) <= strtotime($end_date)):
+        //entirely in vacation, just delete
+        $q = "DELETE FROM PT_SchedSS_Norm WHERE id=".$row['id']. " LIMIT 1";
+        break;
+      case (strtotime($row['start_date']) >= strtotime($start_date) && strtotime($row['end_date']) >= strtotime($end_date)):
+        // starts in vacation, change start date to end of vacation
+        $q = "UPDATE PT_SchedSS_Norm SET start_date='" .date('Y-m-d', strtotime("$end_date +1DAY")). "' WHERE id=".$row['id']. " LIMIT 1";
+        break;
+      case (strtotime($row['start_date']) <= strtotime($start_date) && strtotime($row['end_date']) <= strtotime($end_date)):
+        // ends in vacation, change end date to start of vacation
+        $q = "UPDATE PT_SchedSS_Norm SET end_date='".date('Y-m-d', strtotime("$start_date -1DAY")) ."' WHERE id=".$row['id']. " LIMIT 1";
+        break;
+      case (strtotime($row['start_date']) <= strtotime($start_date) && strtotime($row['end_date']) >= strtotime($end_date)):
+        // wraps vacation, change end date to start of vacation and add new schedule from end of vacation to end date
+        $q = "UPDATE PT_SchedSS_Norm SET end_date='".date('Y-m-d', strtotime("$start_date -1DAY")) ."' WHERE id=".$row['id']. " LIMIT 1";
+        mysql_query($q);
+        $q = "INSERT INTO PT_SchedSS_Norm (id, tutor_id, dow, clock_in, clock_out, strdow, start_date, end_date) VALUES (NULL, ".$row['tutor_id'].", ".$row['dow'].", '".$row['clock_in']."', '".$row['clock_out']."', '".$row['dow']."', '".date('Y-m-d', strtotime("$end_date +1DAY"))."', '".$row['end_date']."')";
+        break;
+      default:
+        throw new Exception("Error: vacation logic applied to schedule that is not aplicable");
+    }
+    mysql_query($q);
+  }
+  return true;
+}
+
+/*-------------------------------------------------------------------	*/
+/* formates a date from a specified format to a db format (yy-mm-dd)	*/
+/*-------------------------------------------------------------------	*/
+
+
+function format_date_db($date, $format="mm-dd-yy", $separator = "-"){
+	if ($date!=NULL){
+		$date_arr = explode($separator,$date);
+		if (checkdate((int)$date_arr[1],(int)$date_arr[2],(int)$date_arr[0])){
+			return $date;
+		}
+		$format_arr = explode($separator, $format);
+		foreach ($format_arr as $k=>$v)
+			$date2[$v] = $date_arr[$k];
+		return $date2['yy']."-".$date2['mm'].'-'.$date2['dd'];
+	}
+}
+
+/*-------------------------------------------------------------------	*/
+/* formates a date from a specified format to a print format	*/
+/*-------------------------------------------------------------------	*/
+function format_date_print($date, $format="yy-mm-dd", $separator = "-", $format_new="mm-dd-yy", $separator_new="-"){
+	if ($date!=NULL){
+		$date_arr = explode($separator, $date);
+		$format_arr = explode($separator, $format);
+		foreach ($format_arr as $k=>$v)
+			$date2[$v] = $date_arr[$k];
+			
+		$format_arr_new = explode($separator_new, $format_new);
+		foreach ($format_arr_new as $k=>$v)
+			$date_new[$v] = $date2[$v];
+		return implode($separator_new, $date_new); 
+	}
+}
+
+/*-------------------------------------------------------------------	*/
+/* formates a time from am/pm format to a database format from a hh:mm am/pm format*/
+/*-------------------------------------------------------------------	*/
+
+function format_time_db($time){
+	if ($time!=NULL){
+		$arr_time = explode(" ", $time);
+		$ampm = $arr_time[1];
+		$arr_time2 = explode(":", $arr_time[0]);
+		if (($ampm == "am" && $arr_time2[0] == 12) || ($ampm == "pm" && $arr_time2[0]<12))
+			$arr_time2[0]+=12;
+		if ($arr_time2[0]<10)
+			$arr_time2[0] = "0".$arr_time2[0];
+		return $arr_time2[0].":".$arr_time2[1];
+	}
+}
+
+
+/*-------------------------------------------------------------------	*/
+/* formates a time from am/pm format to a database format from time inputs and am/pm
+*  $time could be like:  120(01:20), 1130(11:30),1 (01:00), 11:30(11:30), etc
+*/
+/*-------------------------------------------------------------------	*/
+
+function format_time_db_input($time, $ampm){
+	if ($time!=NULL){
+		$arr_time2[1] = "00";
+		if (strlen($time) == 1 || strlen($time) == 2){
+			$arr_time2[0] = (int)$time;
+		}elseif(strlen($time) == 3){
+			$arr_time2[0] = (int)substr($time,0,1);
+			$arr_time2[1] = substr($time,1,2);              
+		}elseif(strlen($time) == 4){
+			$arr_time2[0] = (int)substr($time,0,2);
+			$arr_time2[1] = substr($time,2,2);              
+		}
+		elseif(strlen($time) == 5){
+			$arr_time2[0] = (int)substr($time,0,2);
+			$arr_time2[1] = substr($time,3,2);              
+		}
+		if (($ampm == "am" && $arr_time2[0] == 12) || ($ampm == "pm" && $arr_time2[0]<12))
+			$arr_time2[0]+=12;
+		if ($arr_time2[0]<10)
+			$arr_time2[0] = "0".$arr_time2[0];
+		return $arr_time2[0].":".$arr_time2[1];
+	}
+}
+
+/*-------------------------------------------------------------------	*/
+/* formates a time from a database format to a print am/pm format	*/
+/*-------------------------------------------------------------------	*/
+function format_time_print($time){
+	if ($time!=NULL){
+		$arr_time = explode(":", $time);
+		$arr_time[0] = (int)$arr_time[0];
+		if ($arr_time[0]>=12){
+			$ampm = "pm";
+			if ($arr_time[0]>12)
+				$arr_time[0]-=12;
+			if ($arr_time[0] == 12)
+				$ampm = "am";
+		}
+		else
+			$ampm = "am";
+		return $arr_time[0].":".$arr_time[1]." ".$ampm;
+	}
+}
+
+/*-------------------------------------------------------------------	*/
+/* returns an array with all of the dates indicated by a schedule (input dow, start date, end date, other)	*/
+/*-------------------------------------------------------------------	*/
+function get_sched_dates($dow, $startdate, $enddate, $other=''){
+	$arr_dates = array();
+	$startdate2 = $startdate;
+	$enddate2 = $enddate;
+	
+	if (!is_int($dow)){
+		while(date("l", strtotime($startdate2))!=$dow)
+			$startdate2 = date('Y-m-d', strtotime($startdate2." +1 day"));
+	}else{
+		while(date("w", strtotime($startdate2))!=$dow)
+			$startdate2 = date('Y-m-d', strtotime($startdate2." +1 day"));
+	}
+	
+	while(strtotime($startdate2) <= strtotime($enddate2)){
+		if ($arr_dates[0] == '')
+			$arr_dates[] = $startdate2;
+		$startdate2 = date('Y-m-d', strtotime($startdate2 . " +1 week"));
+		if (strtotime($startdate2)<=strtotime($enddate2))
+			$arr_dates[] = $startdate2;
+	}
+	
+	return $arr_dates;
+} 
+
+function adddate($date,$days=0,$months=0,$years=0,$seconds=0,$minutes=0,$hours=0){
+	$zile_in_luna=array(0,31,28,31,30,31,30,31,31,30,31,30,31);
+	if(is_int($date)){
+		$date=date("Y-m-d H:i:s",$date);
+	}
+	$info=preg_split('/[-\s:]/',$date);
+	$full_return=count($info)>3;
+	$year=$info[0];
+	$mon=$info[1];
+	$mday=$info[2];
+
+	$info[5]+=$seconds;
+	if($info[5]>=60 || $info[5]<0){
+		$minutes+=floor($info[5]/60);
+		$info[5]=$info[5]%60+60*($info[5]<0);
+	}
+	$info[4]+=$minutes;
+	if($info[4]>=60 || $info[4]<0){
+		$hours+=floor($info[4]/60);
+		$info[4]=$info[4]%60+60*($info[4]<0);
+	}
+	$info[3]+=$hours;
+	if($info[3]>=24 || $info[3]<0){
+		$days+=floor($info[3]/24);
+		$info[3]=$info[3]%24+24*($info[3]<0);
+	}
+
+	$year+=$years;
+
+	$mon+=$months;
+	$year+=floor(($mon-1)/12);
+	$mon=($mon-1)%12+1;
+	if($mon<=0){
+		$mon=12+$mon;
+	}
+
+	$zile_in_luna[2] = (($year%4==0 && $year%100!=0) || $year%400==0) ? 29 : 28;
+	if($days==0){
+		$mday=min($mday,$zile_in_luna[$mon]);
+	}else{
+		$mday+=$days;
+		while($mday>$zile_in_luna[$mon] || $mday<=0){
+			if($mday<=0){
+	            $mon--;
+	            $year+=floor(($mon-1)/12);
+	            $mon=($mon-1)%12+1;
+	            if($mon<=0){
+	                $mon=12+$mon;
+	            }
+	            $zile_in_luna[2] = (($year%4==0 && $year%100!=0) || $year%400==0) ? 29 : 28;
+	            $mday+=$zile_in_luna[$mon];
+			}else{
+	            $mday-=$zile_in_luna[$mon];
+	            $mon++;
+	            $year+=floor(($mon-1)/12);
+	            $mon=($mon-1)%12+1;
+			}
+            $zile_in_luna[2] = (($year%4==0 && $year%100!=0) || $year%400==0) ? 29 : 28;
+		}
+	}
+
+	return "$year-".(strlen($mon)==1 ? "0" : "")."$mon-".(strlen($mday)==1 ? "0" : "")."$mday".($full_return ? ' '.str_pad($info[3],2,0,STR_PAD_LEFT).':'.str_pad($info[4],2,0,STR_PAD_LEFT).':'.str_pad($info[5],2,0,STR_PAD_LEFT) : "");
+}
+
+/*-------------------------------------------------------------------	*/
+/* cleans the output buffer and makes header(Location)	*/
+/*-------------------------------------------------------------------	*/
+
+function header_location($url){
+	ob_clean();
+	header("Location: $url");
+	exit;
+}
+
+/*-------------------------------------------------------------------	*/
+/* sends an email 
+/* depricated function, use ptts_mail directly.
+/*-------------------------------------------------------------------	*/
+function web_send_email($emailFrom="", $emailTo, $emailSubject, $emailContent){
+    if (!ptts_mail($emailTo,$emailSubject,$emailContent,array('html'=>true, 'bcc'=>'info@paulthetutors.com')))
+     	return 0;  
+    else
+    	return 1;  
+}
+
+/*-------------------------------------------------------------------	*/
+/* sends a vcard	*/
+/*-------------------------------------------------------------------	*/
+function web_send_vcard_email($vcard_content, $name="", $email_from = "") {
+
+  //Disable because it doesn't work now
+  return 0;
+	$emails_to = array("info@paulthetutors.com","5103015302@vtext.com");
+	//$emails_to = array("alicemanache@yahoo.com");
+	if ($email_from == "")
+		$email_from = "info@paulthetutors.com";
+	$fileatt_type = "application/octet-stream"; // File Type
+	$fileatt_name = $name.".vcf";
+	
+	$headers = "From: ".$email_from;
+	$today = date("l, F j, Y, g:i a");
+	
+	$message = "<br />--- vCard Sent from PaultheTutors ---<br />";
+	$email_subject = "vCard Sent from PaultheTutors for ".$name;
+	$message .= $today." PST<br /><br />";
+	$message .= $name."<br />";
+	
+	$data = $vcard_content;
+	$data = chunk_split(base64_encode($data));
+	
+	$semi_rand = md5(time());
+	$mime_boundary = "==Multipart_Boundary_x{$semi_rand}x";
+	
+	$headers .= "\nMIME-Version: 1.0\n" .
+	"Content-Type: multipart/mixed;\n" .
+	" boundary=\"{$mime_boundary}\"";
+	
+	
+	$message .= "This is a multi-part message in MIME format.\r\n\r\n" .
+	"--{$mime_boundary}\r\n" .
+	"Content-Type:text/html; charset=\"iso-8859-1\"\r\n" .
+	"Content-Transfer-Encoding: 7bit\r\n\r\n" .
+	$message . "\r\n\r\n";
+	$message .= "--{$mime_boundary}\r\n" .
+	"Content-Type: {$fileatt_type};\r\n" .
+	" name=\"{$fileatt_name}\"\r\n" .
+	"Content-Transfer-Encoding: base64\r\n\r\n" .
+	$data ."\r\n\r\n" .
+	"--{$mime_boundary}--\r\n";
+	
+	for ($i=0; $i<count($emails_to); $i++){
+		 ptts_mail($emails_to[$i], $email_subject, $message, $headers);
+	}
+
+}
+
+/*-------------------------------------------------------------------	*/
+/* sends the vcards from fid	*/
+/*-------------------------------------------------------------------	*/
+function sendParentvCards($fid){
+	$query="select *, SUBSTRING_INDEX(mother, ' ', -1) as mother_last_name, SUBSTRING_INDEX(mother, ' ', 1) as mother_first_name, SUBSTRING_INDEX(father, ' ', -1) as father_last_name, SUBSTRING_INDEX(father, ' ', 1) as father_first_name, SUBSTRING_INDEX(guardian, ' ', -1) as guardian_last_name, SUBSTRING_INDEX(guardian, ' ', 1) as guardian_first_name from PT_Family_Info where id='$fid'";
+	$result=mysql_query($query);
+	$row=mysql_fetch_array($result);
+	
+	if ($row['mothers_phone'])	
+		$mothers_phone = $row['mothers_phone'];
+	elseif ($row['main_contact'] == "mother" && $row['main_phone'])
+		$mothers_phone = $row['main_phone'];
+		
+	if ($row['fathers_phone'])
+		$fathers_phone = $row['fathers_phone'];
+	elseif ($row['main_contact'] == "father" && $row['main_phone'])
+		$fathers_phone = $row['main_phone'];
+		
+	if ($row['guardians_phone'])
+		$guardians_phone = $row['guardians_phone'];	
+	elseif ($row['main_contact'] == "guardian" && $row['main_phone'])
+		$guardians_phone = $row['main_phone'];
+		
+	if ($row['mother'] && ($mothers_phone || $row['mothers_email'])){
+		$vcards[] = array("last"=>$row['mother_last_name'],"first"=>$row['mother_first_name'],"name"=>$row['mother'],"email"=>$row['mothers_email'], "phone"=>$mothers_phone, "main_phone"=>$row['main_phone']);
+	}
+	if ($row['father'] && ($fathers_phone || $row['fathers_email'])){
+		$vcards[] = array("last"=>$row['father_last_name'],"first"=>$row['father_first_name'],"name"=>$row['father'],"email"=>$row['fathers_email'], "phone"=>$fathers_phone, "main_phone"=>$row['main_phone']);
+	}
+	if ($row['guardian'] && ($guardians_phone || $row['guardians_email'])){
+		$vcards[] = array("last"=>$row['guardian_last_name'],"first"=>$row['guardian_first_name'],"name"=>$row['guardian'],"email"=>$row['guardians_email'], "phone"=>$guardians_phone, "main_phone"=>$row['main_phone']);
+	}
+	$students = $row['students'];
+	if (count($vcards)){
+		foreach ($vcards as $k=>$vcard){
+			$vcard_content  = "BEGIN:VCARD\n\r";
+			$vcard_content .= "VERSION:3.0\n\r";
+			$vcard_content .= "N:".trim($vcard["last"]).";".trim($vcard["first"]).";;\n\r";
+			$vcard_content .= "FN:".trim($vcard['name'])."\n\r";
+			if ($vcard["email"])
+				$vcard_content .= "EMAIL;TYPE=PREF,INTERNET:".$vcard["email"]."\n\r";
+			if ($vcard["phone"])
+				$vcard_content .= "TEL;TYPE=CELL,VOICE: ".$vcard["phone"]."\n\r";
+			if ($vcard["main_phone"])
+				$vcard_content .= "TEL;TYPE=HOME,VOICE: ".$vcard["main_phone"]."\n\r";
+			$vcard_content .= "ADR;TYPE=HOME:;;".trim(str_replace(";","",$row['address'])).";".trim(str_replace(";","",$row['city'])).";".trim(str_replace(";","",$row['state'])).";".trim($row['zip']).";United States of America"."\n\r";
+			$vcard_content .= "LABEL;TYPE=HOME:".trim(str_replace(";","",$row['address']))."\n\r".trim(str_replace(";","",$row['city'])).", ".trim(str_replace(";","",$row['state']))." ".trim($row['zip'])."\n\rUnited States of America"."\n\r";
+			$vcard_content .= "ORG:Paul the Tutor's\n\r";
+			$vcard_content .= "TITLE:Parent of ".trim(str_replace(";","",$students))."\n\r";
+			$vcard_content .= "END:VCARD";
+			web_send_vcard_email($vcard_content, trim($vcard['name']), $vcard['email']);
+		}
+	}
+}
+
+/*-------------------------------------------------------------------	*/
+/* modifies a session	*/
+/*-------------------------------------------------------------------	*/
+function session_mod($ses_id, $add_date, $start_time, $fid, $hours, $rate, $pay, $tid, $student_id, $name, $opts=null){	
+	
+	$query = "select * from PTAddedApp where id = $ses_id";	
+	$res = runquery($query);
+	$row = mysql_fetch_array($res);
+        $set1 = '';
+		
+// if the student id isn't passed, get it from the sessions
+	if(isEmpty($student_id)) $student_id = $row[student_id];		
+
+		
+        $comments = (is_array($opts) && isset($opts['comments'])) ? $opts['comments']: null;
+	
+	if ($start_time!='')
+		$start_time = $start_time.":00";
+		
+	if ($add_date!=''){
+		$set1.=($set1!='' ? ', ' : '')."date='$add_date'";
+	}else
+		$add_date = $row['date'];
+	if ($start_time!=''){
+		$set1.=($set1!='' ? ', ' : '')."start_time='$start_time'";
+	}else
+		$start_time = $row['start_time'];
+	
+	if ($hours!==''){
+		$set1.=($set1!='' ? ', ' : '')."hours='$hours'";
+	}else
+		$hours = $row['hours'];
+	if ($rate!=='')
+		$set1.=($set1!='' ? ', ' : '')."rate='$rate'";
+	if ($pay!=='')
+		$set1.=($set1!='' ? ', ' : '')."pay='$pay'";
+	if ($tid!='')
+		$set1.=($set1!='' ? ', ' : '')."tid='$tid'";
+	if ($name!='')
+		$set1.=($set1!='' ? ', ' : '')."name='$name'";
+	if ($comments!==''){
+		$set1.=($set1!='' ? ', ' : '')."comments='$comments'";
+	}else
+		$hours = $row['hours'];
+		
+	$set2 = $set1;
+	
+	if ($fid!=''){
+		$set1.=($set1!='' ? ', ' : '')."family_id='$fid'";
+	}
+	
+	if ($student_id!='')
+		$set1.=($set1!='' ? ', ' : '')."student_id='$student_id'";
+	
+
+
+	if (($add_date!='' && $row['date']!=$add_date) || ($start_time!='' && $row['start_time']!=$start_time) || ($fid!='' && $row['sid']!=$fid) || ($hours!=''&&$row['hours']!=$hours) || ($tid!='' && $row['tid']!=$tid) || ($name!='' && $row['name']!=$name)){
+		//mofify google calendar
+		set_time_limit(0);
+		$tar = get_tut_info($row['tid']);
+		$token = gc_login();
+		$fam_name = get_fam_name($row['sid']);
+		 del_goog_cal($token, $row['date'], $row['start_time'], $row['hours'], $fam_name, isset($tar['gc_username'])?$tar['gc_username']:null,$tar['gc_name']);
+		if ($tid && $row['tid']!=$tid){
+		  $tar = get_tut_info($tid);
+		  $token = gc_login();
+		}
+		if ($row['sid']!=$fid)
+		  $fam_name = get_fam_name($fid);
+		  add_goog_cal($token, $add_date, $start_time, $hours, $fam_name, isset($tar['gc_username'])?$tar['gc_username']:null,$tar['gc_name']);
+		  set_time_limit(60);
+	}
+	
+	
+	$res = "UPDATE PTAddedApp SET $set1 where id = $ses_id";
+	runquery($res);
+}
+
+
+/**************************************************
+ get raw score for an SAT section
+ inputs: test_id, testprep_id , section_type
+ ***************************************************/
+ function getSecRawScore_New($test_id, $testprep_id, $section_type, $other=''){
+ 
+ 	$raw_score = 0;
+	
+ 	$sq = "select section_number from TP_SAT_Sections where test_id = $test_id and section_type = '$section_type'";
+	$secRS = runquery($sq);
+	while($secar = mysql_fetch_array($secRS)){
+		$secnum = $secar['section_number'];
+		if ($other == '')
+			$rsq = "select sum(raw_points) from TP_HW_Answers where test_id = $test_id and testprep_id= $testprep_id  and section_num = $secnum";
+		elseif($other == 'test')
+			$rsq = "select sum(raw_points) from TP_SAT_Answers where test = $test_id and sid= $testprep_id  and section = $secnum";
+		$tempraw = singlequery($rsq);
+		$raw_score = $raw_score + $tempraw;
+		// echo "raw is $raw_score<BR>";
+	}
+	return $raw_score;
+}	
+
+
+function getReportedScore_New($rawscore, $sectiontype, $essay_score, $test_number){
+	if (isEmpty($essay_score))
+		$essay_score = 0;
+	if($essay_score == 0 && $sectiontype == "writing") 
+		$essay_score = 3;
+	return getReportedScore($rawscore, $sectiontype, $essay_score,'');
+}
+
+
+
+
+/***********************************************************************
+funtion non_tut_session_add
+************************************************************************/
+function non_tut_session_add($add_date, $start_time, $end_time, $tutor_id, $name, $email, $phone, $comments, $sched_id='', $paid=0, $rate=0, $opts=null) {
+	if(!isset($tid) || isEmpty($tid)) {
+		$tid = 1;
+	}
+
+        // fix formatting
+	$start_time .= ':00';
+	$end_time .= ':00';
+        
+	
+	$AQStr = "INSERT INTO PT_Other_Appt SET name=\"".$name."\",  date=\"".$add_date."\", start_time=\"".$start_time."\", end_time=\"".$end_time."\", tutor_id=\"".$tutor_id."\", sched_id=\"".$sched_id."\", email=\"".$email."\", phone=\"".$phone."\", comments=\"".$comments."\", paid=\"".$paid."\", rate=".$rate;
+	
+// echo "This is the query $AQStr <BR><BR>";	
+	
+	$ARS = runquery($AQStr);
+        $rid = mysql_insert_id();
+
+// put the google calendar functions
+	$tar = get_tut_info($tutor_id);
+// get the tutors information	
+	$gc_name = $tar['gc_name']; //name of the calendar
+	$tut_name = $tar['first_name'];
+	set_time_limit(0);
+	if (!isset($GLOBALS['x_conf_cal_token']))
+		$gc_token=gc_login(); // get's login info
+	$hours = time_diff($end_time, $start_time);
+        $gc_username = null; // Why is this used below but never set?
+    add_goog_cal($gc_token, $add_date, $start_time, $hours, $name,$gc_username,$gc_name);
+	set_time_limit(60);
+        $msg = "Appointment: $name\nDate: $add_date\nStart Time: $start_time\nHours: $hours\n";
+        if (!(isset($opts['email_tut']) && !$opts['email_tut'])) // default to sending
+          mail_alert($tar['email'], "Appointment added: ".$name, $msg, 'nth');
+        if (!(isset($opts['email_paul']) && !$opts['email_paul'])) // default to sending
+          mail_alert('paul@paulthetutors.com', "NTH Add ".$name ." w/ $tut_name on $add_date at $start_time ($hours)",'' , 'nth');
+	#return "Added an event on $add_date at $start_time";
+        return $rid;
+}
+
+
+/********************************************************
+ deletes a non tutoring session based on the session id
+ *******************************************************/
+function non_tut_session_del($ses_id, $opts=null){
+	$query = "select * from PT_Other_Appt where id = $ses_id";	
+	$res = runquery($query);
+	$row = mysql_fetch_array($res);
+	$row['hours'] = time_diff($row['end_time'], $row['start_time']);
+	/**************delete from google calendar**********************/
+	// get the tutors information	
+	set_time_limit(0);
+	$tar = get_tut_info($row['tutor_id']);
+	$gc_name = $tar['gc_name']; //name of the calendar
+	if (!$GLOBALS['x_conf_cal_token'])
+		$gc_token=gc_login(); // get's login info
+        $gc_username = null; // Why is this used below but never set?
+   	del_goog_cal($gc_token, 
+                     $row['date'], 
+                     $row['start_time'], 
+                     $row['hours'], 
+                     $row['name'],
+                     $gc_username,
+                     $gc_name
+        );
+   	set_time_limit(60);
+	/**************end delete from google calendar**********************/
+	
+	$DQstr = "delete from PT_Other_Appt where id = $ses_id";
+	$DRS = runquery($DQstr);
+        // delete associated work hours if they exist
+        $tut_name=$tar['first_name'];
+        $name = $row['name'];
+        $add_date = $row['date'];
+        $start_time = $row['start_time'];
+        $hours = $row['hours'];
+        runquery("delete from PT_NT_Work_Hours WHERE other_appt_id=$ses_id");
+        if (!(isset($opts['email_tut']) && !$opts['email_tut'])) // default to sending
+          mail_alert($tar['email'], "Work Hours Deleted ".$name, " Work Hours deleted on $add_date at $start_time ($hours)",'' , 'nth');
+        if (!(isset($opts['email_paul']) && !$opts['email_paul'])) // default to sending
+          mail_alert('paul@paulthetutors.com', "NTH Del ".$name ." w/ $tut_name on $add_date at $start_time ($hours)",'' , 'nth');
+	return 1;
+} //session_del
+
+
+
+/*-------------------------------------------------------------------	*/
+/* modifies a nont tutoring session	*/
+/*-------------------------------------------------------------------	*/
+function non_tut_session_mod($ses_id, $add_date, $start_time, $end_time, $tutor_id, $name, $email, $phone, $comments){
+	
+	$query = "select * from PT_Other_Appt where id = $ses_id";	
+	$res = runquery($query);
+	$row = mysql_fetch_array($res);
+	
+	if ($start_time!='')
+		$start_time = $start_time.":00";
+	if ($end_time!='')
+		$end_time = $end_time.":00";
+	
+	if ($add_date!=''){
+		$set1.=($set1!='' ? ', ' : '')."date='$add_date'";
+	}else
+		$add_date = $row['date'];
+	if ($start_time!=''){
+		$set1.=($set1!='' ? ', ' : '')."start_time='$start_time'";
+	}else
+		$start_time = $row['start_time'];
+	
+	if ($end_time!=''){
+		$set1.=($set1!='' ? ', ' : '')."end_time='$end_time'";
+	}else
+		$end_time = $row['end_time'];
+	if ($tutor_id!='')
+		$set1.=($set1!='' ? ', ' : '')."tutor_id='$tutor_id'";
+	if ($name!='')
+		$set1.=($set1!='' ? ', ' : '')."name='$name'";
+	if ($email!='')
+		$set1.=($set1!='' ? ', ' : '')."email='$email'";
+	if ($phone!='')
+		$set1.=($set1!='' ? ', ' : '')."phone='$phone'";
+	if ($comments!='')
+		$set1.=($set1!='' ? ', ' : '')."comments='$comments'";
+		
+	
+	if ($name == '')
+		$name = $row['name'];
+	if (($add_date!='' && $row['date']!=$add_date) || ($start_time!='' && $row['start_time']!=$start_time) || ($row['end_time']!=$end_time) || ($tutor_id!='' && $row['tutor_id']!=$tutor_id) || ($name!='' && $row['name']!=$name)){
+		//mofify google calendar
+		set_time_limit(0);
+		$tar = get_tut_info($row['tutor_id']);
+		if (!$GLOBALS['x_conf_cal_token'])
+			$token = gc_login();
+		$row['hours'] = time_diff($row['end_time'], $row['start_time']);
+		del_goog_cal($token, $row['date'], $row['start_time'], $row['hours'], $row['name'], $tar['gc_username'],$tar['gc_name']);
+		if ($tutor_id && $tutor_id!=$row['tutor_id']){
+			$tar = get_tut_info($tutor_id);
+			if (!$GLOBALS['x_conf_cal_token'])
+				$token = gc_login();
+		}
+		$hours = time_diff($end_time, $start_time);
+		add_goog_cal($token, $add_date, $start_time, $hours, $name, $tar['gc_username'],$tar['gc_name']);
+		set_time_limit(60);
+	}
+	
+	
+	$res = "UPDATE PT_Other_Appt SET $set1 where id = $ses_id";
+	runquery($res);
+}
+
+/************************************************************************
+* function non_tut_hours(
+*   <add|edit>,
+*   <@FORMDATA='$_REQUEST'>, 
+*   <mandatory_fields=''>, 
+*   <ignored_fields=''>, 
+*   <tdstyle=''>, 
+*   <where=''>
+* )
+************************************************************************/ 
+function non_tut_hours(
+  $action, 
+  $formdata=null, 
+  $mandFields='', 
+  $ignFields='',
+  $tdstyle='',
+  $where='',
+  $opts=null
+) {
+  if (!$formdata) $formdata=$_REQUEST;
+
+  switch ($action) {
+    case "edit":
+      $r= UpdateFields('PT_NT_Work_Hours', $formdata, $mandFields, $ignFields, $tdstyle, $where); 
+      break;
+    case "add":
+      $r = InsertFields('PT_NT_Work_Hours', $formdata, $mandFields, $ignFields, $tdstyle, $where); 
+      break;
+  }
+  if (is_int($r)) {
+    $fname = singlequery('SELECT first_name FROM PT_Tutors WHERE id = '.$formdata['tutor_id']);
+    $lname = singlequery('SELECT last_name FROM PT_Tutors WHERE id = '.$formdata['tutor_id']);
+    $msg  = $fname . " " . $lname . " added non-tutoring hours for ". $formdata['date'] ."\n";
+    $msg .= $formdata['hours'] . " hours billed at ". $formdata['rate']."/hr\n";
+    $msg .= "Description: ".$formdata['description'] . "\n";
+    $msg .= "Comment: ". $formdata['comments']. "\n";
+    if (!(isset($opts['email_paul']) && !$opts['email_paul'])) // default to sending
+      ptts_mail("paul@paulthetutors.com", "Non-Tut Hours ".ucwords($action)."ed", $msg);
+  } 
+  return $r;
+}
+      
+
+
+
+/*-------------------------------------------------------------------	*/
+/* calculates the difference between two times	*/
+/*-------------------------------------------------------------------	*/
+function time_diff($end_time, $start_time){
+	if ($end_time!='' && $start_time!=''){
+		$hours = (int)((strtotime($end_time) - strtotime($start_time))/3600);
+		$min = (strtotime($end_time) - strtotime($start_time) - 3600*$hours)/60;
+		if ($min<10 && $min>0) $min = "0".$min;
+		$duration = $hours.($min?".".$min : "");
+	}
+	return $duration;
+}
+
+function fam_contact($fam_id,$link="Family Information",$style=""){ 
+	return '<a style="cursor:pointer; '.$style.'" onclick="javascript:popup(\''.MAIN_BASE_PATH.'/admin/families_view.php?id='.$fam_id.'&popup=popup&only_view=1\',\'Family Details\',\'800\',\'800\')">'.$link.'</a>';
+	
+}
+
+function billing_history($family_id, $type = 'all', $folder="admin"){
+	$res = runquery(($type == "all" || $type == "bills"  ? "(SELECT month, year, amount, status, date, paid_amount, 1 as tab FROM PT_Billing WHERE fid = $family_id $whereclause)" : "").($type == "all" ? " UNION " : "").($type == "all" || $type == "payments"  ? "(SELECT NULL as month,  NULL as year, amount,  NULL as status, date, NULL as paid_amount, 2 as tab FROM PT_Payments p WHERE fid = $family_id $whereclause)" : "")."  order by date desc");
+	$arr_status = array("paid"=>"Paid","notpaid"=>"Not Paid","partpaid"=>"Part Paid")
+	?>
+	<table cellpadding="5" cellspacing="0" border=1 width="100%" class="table_1">
+		<tr style="background: #eee; height: 35px">
+			<td class="text_grey"><b>Date</b></td>
+			<td class="text_grey"><b>Description</b></td>
+			<td class="text_grey"><b>Amount</b></td>
+			<td class="text_grey"><b>Status</b></td>
+			<td class="text_grey"><b>Action</b></td>
+		</tr>
+	<?php while($row = mysql_fetch_array($res)){
+		   $a_date = explode("-",$row['date']);
+		   $month = (int)$a_date[1];
+		   $day = $a_date[2];
+		   $year = $a_date[0];
+		   $date = $month.'/'.$day.'/'.substr($year,2,2);
+		   if($row['tab'] == 1){
+		   	    $status = $arr_status[$row['status']];
+		   	    if ($row['status'] == 'partpaid')
+		   	    	$status = 'Owe '.'$'.number_format($row['amount'] - $row['paid_amount'],2);
+		   	    if ($row['status'] != 'paid')
+		   	    	$a_color = 'red';
+		   	    else
+		   	    	$a_color = 'black';
+		   		$description = 'Bill for '.date("F", strtotime($row['date']))." ".$year;
+		   }
+		   	else{
+		   		$status = '';
+		   		$description = 'Payment';
+		   		$a_color = 'green';
+			}
+		?>
+		<tr>
+			<td><div style="width:50px; text-align:right"><?php echo $date;?></div></td>
+			<td><?php echo $description;?></td>
+			<td  style='color:<?php echo $a_color;?>'><?php echo ($row['tab'] == 1 ?"-" : "+").'$'.number_format($row['amount'],2);?></td>
+			<td><?php echo $status;?></td>
+			<td align="center"><?php echo ($row['tab'] == 1 ? '<a target="_blank" href="'.($folder == "admin" ? "showbillsaction_new.php": "viewbillaction.php").'?fid='.$family_id.'&month='.$month.'&year='.$year.'">see invoice</a>' : '');?></td>
+		</tr>
+	<?php }?>
+	</table>
+	<?php
+	
+}
+
+function month_overview($month, $year, $tid='', $with_action=1){
+	$month = (int)$month;
+	$my = $year."-".($month<10 ? '0'.$month : $month);
+	$strMonth = date("F", mktime (0,0,0,$month,15,$year));
+	if ($tid)
+		$where = 'AND t.id='.$tid;
+	$res = runquery("SELECT t.*, SUM(s.hours) as total_hours, SUM(s.hours*s.rate) as total_billed, SUM(s.hours*s.pay) as total_wages, MIN(pay) as min_pay, MAX(pay) as max_pay FROM PT_Tutors t LEFT JOIN PTAddedApp s ON s.tid=t.id WHERE SUBSTRING(s.date,1,7)='".$my."' $where GROUP BY s.tid ORDER BY t.last_name ASC");
+	$nr_tutors = 0;
+	if (mysql_num_rows($res)){
+	?>
+	<table cellpadding="5" cellspacing="0" border=1 width="100%" class="table_1">
+	<tr style="background: #eee; height: 35px">
+			<td  class="text_grey">&nbsp;</td>
+			<td  class="text_grey" colspan="2">&nbsp;</td>
+			<td class="text_grey" colspan="8" align="center" style="font-size:18px"><b>Finances <?php echo $strMonth.", ".$year?></b></td>
+		</tr>
+		<tr>
+			<td class="text_grey"><b>ID</b></td>
+			<td class="text_grey"><b>Tutor</b></td>
+			<td class="text_grey"><b>Total Hrs</b></td>
+			<td class="text_grey"><b>Total Billed</b></td>
+			<td class="text_grey"><b>Total Wages</b></td>
+			<td class="text_grey"><b>Ave Wages</b></td>
+			<td class="text_grey"><b>Total Profits</b></td>
+			<td class="text_grey"><b>Ave Profits</b></td>
+			<td class="text_grey"><b>Min/Max Pay</b></td>
+			<td class="text_grey"><b>Action</b></td>
+		</tr>
+	<?php while($row = mysql_fetch_array($res)){
+			  if ($row['id'] == 1){//paul
+		  			$row_paul = $row;
+		  			$ave_wages_paul=$row['total_wages']/$row['total_hours'];
+		  			$profits_paul = $row['total_billed'] - $row['total_wages'];
+		  			$ave_profits_paul = $profits/$row['total_hours'];
+			  }else{
+				  $total_hrs+=$row['total_hours']; 
+				  $total_billed+=$row['total_billed'];
+				  $total_wages+=$row['total_wages']; 
+				  $ave_wages=$row['total_wages']/$row['total_hours'];
+				  $total_ave_wages+=$ave_wages; 
+				  $profits = $row['total_billed'] - $row['total_wages'];
+				  $total_profits+=$profits;
+				  $ave_profits = $profits/$row['total_hours'];
+				  $total_ave_profits+=$ave_profits;
+				  $nr_tutors++;
+			  }
+		  if ($row['id'] != 1){
+			?>
+			<tr>
+				<td><?php echo $row['id'];?></td>
+				<td><?php echo $row['first_name'].' '.$row['last_name'];?></td>
+				<td><?php echo $row['total_hours'];?></td>
+				<td><?php echo number_format($row['total_billed'],2);?></td>
+				<td><?php echo number_format($row['total_wages'],2);?></td>
+				<td><?php echo number_format($ave_wages,2);?></td>
+				<td><?php echo number_format($profits,2);?></td>
+				<td><?php echo number_format($ave_profits,2);?></td>
+				<td><?php echo $row['min_pay'].'/'.$row['max_pay'];?></td>
+				<td align="center"><?php echo '<a target="_blank" href="showbillsaction_new.php?not_mothh_view=1&tid='.$row['id'].'&month='.$month.'&year='.$year.'">View</a>';?></td>
+			</tr>
+	<?php }
+	}
+	if($tid==''){
+	?>
+	<tr style="font-weight:bold">
+			<td colspan="2" align="center"><b>Total Tutors</b></td>
+			<td><?php echo $total_hrs;?></td>
+			<td><?php echo number_format($total_billed,2);?></td>
+			<td><?php echo number_format($total_wages,2);?></td>
+			<td><?php echo number_format($total_ave_wages/$nr_tutors,2);?></td>
+			<td><?php echo number_format($total_profits,2);?></td>
+			<td><?php echo number_format($total_ave_profits/$nr_tutors,2);?></td>
+			<td>&nbsp;</td>
+			<td>&nbsp;</td>
+		</tr>
+	<?php
+	}
+	if ($row_paul[id] == 1){
+			?>
+			<tr>
+				<td><?php echo $row_paul['id'];?></td>
+				<td><?php echo $row_paul['first_name'].' '.$row_paul['last_name'];?></td>
+				<td><?php echo $row_paul['total_hours'];?></td>
+				<td><?php echo number_format($row_paul['total_billed'],2);?></td>
+				<td><?php echo number_format($row_paul['total_wages'],2);?></td>
+				<td><?php echo number_format($ave_wages_paul,2);?></td>
+				<td><?php echo number_format($profits_paul,2);?></td>
+				<td><?php echo number_format($ave_profits_paul,2);?></td>
+				<td><?php echo $row_paul['min_pay'].'/'.$row_paul['max_pay'];?></td>
+				<td align="center"><?php echo '<a target="_blank" href="showbillsaction_new.php?not_mothh_view=1&tid='.$row_paul['id'].'&month='.$month.'&year='.$year.'">View</a>';?></td>
+			</tr>
+	<?php }	
+	
+	if($tid==''){?>
+		<tr style="font-weight:bold">
+			<td colspan="2" align="center"><b>Total w/Paul</b></td>
+			<td><?php echo $total_hrs;?></td>
+			<td><?php echo number_format($total_billed+$row_paul['total_billed'],2);?></td>
+			<td><?php echo number_format($total_wages+$row_paul['total_wages'],2);?></td>
+			<td><?php echo number_format(($total_ave_wages+$ave_wages_paul)/($nr_tutors+1),2);?></td>
+			<td><?php echo number_format($total_profits+$profits_paul,2);?></td>
+			<td><?php echo number_format(($total_ave_profits+$ave_profits_paul)/($nr_tutors+1),2);?></td>
+			<td>&nbsp;</td>
+			<td>&nbsp;</td>
+		</tr>
+	<?php }?>	
+	</table>
+	<?php
+	}
+}
+
+/***********************************************************************
+funtion get_fam_students($fam_name)
+inputs: family id
+***********************************************************************/
+
+function get_fam_students($fid){
+	$arr = array();
+	$res = runquery("SELECT first_name,last_name FROM PTStudentInfo_New  where fid='".$fid."'");
+	while($row = mysql_fetch_array($res))
+		$arr[] = $row['first_name'].' '.$row['last_name'];
+	return $arr;	
+	
+}
+
+
+/***********************************************************************
+
+funtion get_fam_name_last_first($fam_name)
+
+inputs: family id
+
+outputs: last_name, first name) as a string
+
+***********************************************************************/
+
+function get_fam_name_last_first($fam_name){
+	$name = ""; $a = array();
+	$a = explode(" ", trim($fam_name));
+	$a = array_reverse($a);
+		foreach ($a as $m=>$n){
+			if ($a!='')
+				$name.= trim($n).($m == 0 ? ", " : "");
+
+		}
+
+return $name;
+
+} // end get_fam_name_last_first
+
+
+/***********************************************************************
+
+funtion zz_archive_data($move_id,$tablename,$tablename_archive)
+
+***********************************************************************/
+
+function zz_archive_data($move_id,$tablename,$tablename_archive){
+	If(!(empty($move_id))){
+		$MQStr = "select * from $tablename where id=$move_id";
+		$MRS = runquery($MQStr);
+		while($MAR = mysql_fetch_assoc($MRS)){
+			foreach($MAR as $k=>$v)
+				$MAR[$k] = addslashes($v);
+			$MAR["old_id"] = $MAR["id"];
+			$int_id = $MAR["id"];
+			unset($MAR["id"]);
+			$MARk = array_keys($MAR);
+			$cols = implode(",",$MARk);
+			$vals = implode("', '",$MAR);
+			
+			$MQStr = "Insert into $tablename_archive ($cols) Values ('$vals')";
+			if(mysql_query($MQStr)){
+				$DQStr = "delete from $tablename where id = $int_id";
+				echo "<div class=text_success style='text-align:center'>Record $int_id from $tablename has been archived</div><BR>";
+				mysql_query($DQStr);
+			}else {echo mysql_error(); return 0;}
+		}
+		return 1; 
+	}
+}
+
+/***********************************************************************
+
+funtion zz_restore_archive_data($move_id,$tablename,$tablename_archive)
+
+***********************************************************************/
+
+function zz_restore_archive_data($move_id,$tablename,$tablename_archive){
+	If(!(empty($move_id))){
+		$MQStr = "select * from $tablename_archive where id='".$move_id."'";
+		$MRS = mysql_query($MQStr);
+		while($MAR = mysql_fetch_assoc($MRS)){
+			foreach($MAR as $k=>$v)
+				$MAR[$k] = addslashes($v);
+			$MAR["id"] = $MAR["old_id"];
+			unset($MAR["old_id"]);
+			$MARk = array_keys($MAR);
+			$cols = implode(",",$MARk);
+			$vals = implode("', '",$MAR);
+			
+			$MQStr = "Insert into $tablename ($cols) Values ('$vals')";
+			if(mysql_query($MQStr)){
+				echo "<div class=text_success style='text-align:center'>Record $MAR[id] from $tablename has been recovered</div>";
+				mysql_query("DELETE FROM $tablename_archive where id in ($str_move_ids)");                
+			} else {
+				echo "didn't work ";
+				echo "<BR>" . mysql_error();
+				return 0;
+			}	
+			// if the query works
+		} // while goes through people to be archived
+		return 1;
+	}
+}
+
+/***********************************************************************
+
+funtion last_saturday_of_last_month($start_date)
+returns the last saturday of the last month. , if the class start_date is June 20th, the date would be on the last Saturday of May.
+
+***********************************************************************/
+
+function last_saturday_of_last_month($start_date){
+	 $start_date_last_month = adddate($start_date,0,-1);
+	 $a_d = explode("-",$start_date_last_month);
+	 $month = (int)$a_d[1];
+	 $year = $a_d[0];
+	 $lastday = date("t", mktime(0, 0, 0, $month, 1, $year));
+	 $dayofweek = date("w", mktime(0, 0, 0, $month, $lastday, $year));
+	 $dep_date = date("Y-m-d", mktime(0, 0, 0, $month, $lastday - $dayofweek-1, $year));
+	 
+	 return $dep_date;
+}
+
+?>

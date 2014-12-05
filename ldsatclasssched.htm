@@ -1,0 +1,69 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+"http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<title>Untitled Document</title>
+<link href="NewPTTcss.css" rel="stylesheet" type="text/css">
+<style type="text/css">
+<!--
+.plain {
+	font-weight: normal;
+}
+.style1 {
+	font-size: 14px;
+	font-weight: bold;
+}
+-->
+</style>
+</head>
+
+<body>
+<table width="686" border="0" cellpadding="3" cellspacing="0" background="images/flowbg.gif">
+  <tr>
+    <td height="29" colspan="2" valign="top"><span class="Head1_Green"> LD SAT
+        Class Schedule</span>
+      <div align="right"></div></td>
+    <td width="214" rowspan="2" align="center" valign="bottom">	  <div align="center"><a href="http://www.tinyurl.com/ldsatstudyguide"><img src="images/ldsat_cover_108_pix.jpg" width="149" height="188" border="0"><br>
+        <br>
+        <strong>Buy The LD SAT Study Guide</strong></a><br>
+    </div></td>
+  </tr>
+  <tr>
+    <td width="37" height="279" valign="top">&nbsp;</td>
+    <td width="417" height="279" valign="top">    <form name="form1" method="post" action="ldsatclasssched2.php">
+      <table width="326" border="2" cellpadding="2" cellspacing="0" bordercolor="#FFFFFF">
+        <tr>
+          <td colspan="2" scope="col"><span class="style1">Please select the class to see the schedule </span>
+          </tr>
+        <tr>
+          <td width="50%" scope="col"><div align="right"><strong>Class </strong></div></th>
+  
+		  
+		  <td width="50%" scope="col">&nbsp;</th>
+		    <select name="classid">
+		      <option value=" "> </option>
+			  
+<?
+$strtoday = gettodaydate("","");
+$QStr = "select id from PT_SAT_Class_Info where end_date >= '$strtoday' order by id DESC";
+$RS = runquery($QStr);
+while ($arid = mysql_fetch_array($RS)){
+		echo "<option value=\"$arid[0]\">class $arid[0]</option>";
+}	     
+?>			 
+			  </select>
+			  
+		  
+        </tr>
+        <tr>
+          <td colspan="2"><div align="center">
+			<input type="submit" name="Submit" value="Submit">
+          </div></td>
+          </tr>
+      </table>
+    </form></td>
+  </tr>  
+</table>
+</body>
+</html>

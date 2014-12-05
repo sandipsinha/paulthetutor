@@ -1,0 +1,1232 @@
+<?
+/*-------------------------------------------------------------------
+
+- putCheckBoxInputEvent($disName, $varName, $varChecked, $varEvent)
+- putSelectInputShow($disName, $varName, $disArray, $varSelected, $strComment, $special, $labelFirst ='', $show,$set)
+- putTextFieldShow($disName, $varName, $varLen, $disLen, $varVal, $strComment, $special,$show,$set)
+- putSelectInputOnChange($disName, $varName, $disArray, $varSelected, $strComment, $special, $labelFirst ='',$event)
+- get_sched_dates1($dow, $startdate, $enddate, $other='')
+- non_tut_session_mod_update($ses_id, $add_date, $start_time, $end_time, $tutor_id, $name...)
+- class_add_student($student_id, $class_id, $paid, $due, $learning_disability, $extended_time, $tutor_id, ...
+- checkIfStudentExists($first_name, $lastname, $fid) {
+- just_fam_search ($style="drop", $field_name="family_id", $fam_id=0, $label="", $callback="")
+- put_fam_search ($style="drop", $field_name="fid", $fam_id=0, $label="", $callback="")
+- fam_menu_updated($style="student", $inputname="sid", $fam_id=0, $label="", $other="", $addevent="")
+- put_student_search ($style="drop", $field_name="student_id",  $student_id=NULL, $label="" , $callback="")
+- just_student_search ($style="drop", $field_name="student_id",  $student_id=NULL, $label="" , $callback="")
+- studentid_menu_updated($selected_value=NULL, $name="student_id", $label, $callback="")
+- addContact($contact, $username, $password)
+-------------------------------------------------------------------*/
+
+
+
+/*-------------------------------------------------------------------
+Purpose: Newly Created To provide an event on click of a checkbox
+ INSERTS Check Box  INTO A TABLE
+	disName - printed name
+	varName - name of field
+	varChecked - is boxed checked variable is either "checked" or blank, and is echoed regardless
+	disLabel - instructions for the field
+-------------------------------------------------------------------*/
+
+Function putCheckBoxInputEvent($disName, $varName, $varChecked, $varEvent) {
+?>
+   <tr>
+	<td>&nbsp;</td>
+	 <td>
+		<input  type="checkbox" id="<? echo $varName;?>" name="<? echo $varName; ?>" value="checked" <? echo $varChecked; ?> onclick="<? echo $varEvent; ?>">&nbsp;&nbsp;
+		<?echo $disName ?>
+	</td>
+   </tr>
+<? }
+// END FUNCTION
+
+
+/*-------------------------------------------------------------------
+Purpose: Newly Created To provide with a tr with an id (Generally Used with show/hide js feature)
+ INSERTS SELECT INPUT INTO A TABLE
+	disName - printed name
+	varName - name of field
+	disArray - display values [key displayed, value is value]
+	varSelected - Passed Value that should be initially selected.  not the displayed value
+	disComments - instructions for the field
+-------------------------------------------------------------------*/
+
+Function putSelectInputShow($disName, $varName, $disArray, $varSelected, $strComment, $special, $labelFirst ='', $show,$set) {
+?>
+   <tr id="<?php echo $show;?>" <?php echo ($set=='true'?'style="visibility:visible;padding-bottom:10px;"':'style="visibility:hidden;padding-bottom:10px;"')?>>
+	<td   valign="top">
+	  <div align="right">
+<? 	  echo $disName;
+	  if(preg_match("/required/",$special)){
+	  	echo "<font color=\"#FF0000\">*</font>";
+	  }
+
+?>
+
+	  </div>
+	</td>
+     <td>
+
+        <select name="<? echo $varName; ?>">
+ 		<option value=""
+<? 		If (!(isset($varSelected))){
+			echo "selected";
+		}
+	echo ">$labelFirst</option>";
+
+		while (list ($key, $val) = each ($disArray)) {
+			echo "<option value=\"$key\"";
+			If ($varSelected == $val){
+				echo " selected ";
+			}
+			echo ">$val </option> \r";
+		}
+		echo "</select> $strComment</td></tr>";
+}
+// END FUNCTION
+
+/* -------------------------------------------------------------------
+Purpose: Newly Created To provide with a tr with an id (Generally Used with show/hide js feature)
+INSERTS TEXT INPUT INTO A TABLE
+	disName - printed name
+	varName - name of field
+	varLen - length of text field
+	disLen - size of text box
+	varVal - value of text field
+	strComment - instructions for the field
+	special - wildcar for required, currency, etc....
+-------------------------------------------------------------------	*/
+Function putTextFieldShow($disName, $varName, $varLen, $disLen, $varVal, $strComment, $special,$show,$set) {
+if(isEmpty($varLen)){
+	$varLen = 50;
+}
+?>
+
+<tr valign="middle" id="<?php echo $show;?>" <?php echo ($set=='true'?'style="visibility:visible;padding-bottom:10px;"':'style="visibility:hidden;padding-bottom:10px;"')?>>
+	<td>
+	  <div align="right" valign="middle">
+	  <? echo $disName;
+	  if(preg_match("/required/",$special)){
+	  	echo "<font color=\"#FF0000\">*</font>";
+	  }
+	  	if(!(isEmpty($strComment))){
+
+		echo "<span class=\"form_comments\"> <br>$strComment </span>";
+	}
+
+	  ?>
+
+	  </div>
+	</td>
+	<td>
+<?
+	if(preg_match("/currency/",$special)){
+		echo "$";
+	}
+	echo "<input type=\"text\" name=\"$varName\" size=\"$disLen\" maxlength=\"$varLen\" value=\"$varVal\"> ";
+?>
+	</td>
+   </tr>
+<? }
+//END FUNCTION
+
+
+/*-------------------------------------------------------------------
+Purpose: Newly Created To provide an event on selection (Generally Used with show/hide js feature)
+ INSERTS SELECT INPUT INTO A TABLE
+	disName - printed name
+	varName - name of field
+	disArray - display values [key displayed, value is value]
+	varSelected - Passed Value that should be initially selected.  not the displayed value
+	disComments - instructions for the field
+-------------------------------------------------------------------*/
+
+Function putSelectInputOnChange($disName, $varName, $disArray, $varSelected, $strComment, $special, $labelFirst ='',$event) {
+?>
+   <tr>
+	<td   valign="top">
+	  <div align="right">
+<? 	  echo $disName;
+	  if(preg_match("/required/",$special)){
+	  	echo "<font color=\"#FF0000\">*</font>";
+	  }
+
+?>
+
+	  </div>
+	</td>
+     <td>
+
+        <select name="<? echo $varName; ?>" id="<? echo $varName; ?>" <?php echo $event ?>>
+ 		<option value=""
+<? 		If (!(isset($varSelected))){
+			echo "selected";
+		}
+	echo ">$labelFirst</option>";
+
+		while (list ($key, $val) = each ($disArray)) {
+			echo "<option value=\"$key\"";
+			If ($varSelected == $val){
+				echo " selected ";
+			}
+			echo ">$val </option> \r";
+		}
+		echo "</select> $strComment</td></tr>\r";
+}
+//END FUNCTION
+
+
+/*-------------------------------------------------------------------*/
+
+function get_sched_dates1($dow, $startdate, $enddate, $other=''){
+	//echo $dow." - ". $startdate." - ".$enddate;
+	//die('stop');
+	$arr_dates = array();
+	$startdate2 = $startdate;
+	$enddate2 = $enddate;
+
+	if($dow!="0")
+	{
+	//die('stoppp');
+		if (!is_int($dow)){
+			while(date("l", strtotime($startdate2))!=$dow)
+				$startdate2 = date('Y-m-d', strtotime($startdate2." +1 day"));
+	 	}else{
+			while(date("w", strtotime($startdate2))!=$dow)
+				$startdate2 = date('Y-m-d', strtotime($startdate2." +1 day"));
+		}
+			while(strtotime($startdate2) <= strtotime($enddate2)){
+			if ($arr_dates[0] == '')
+				$arr_dates[] = $startdate2;
+			$startdate2 = date('Y-m-d', strtotime($startdate2 . " +1 week"));
+			if (strtotime($startdate2)<=strtotime($enddate2))
+				$arr_dates[] = $startdate2;
+		}
+	}
+	else
+	{
+		//die('inside other condition when single event');
+		$startdate2 = date('Y-m-d', strtotime($startdate2));
+		$arr_dates[] = $startdate2;
+	}
+
+
+	return $arr_dates;
+}
+
+
+
+
+
+/*-------------------------------------------------------------------	*/
+/* modifies a nont tutoring session	*/
+/*-------------------------------------------------------------------	*/
+function non_tut_session_mod_update($ses_id, $add_date, $start_time, $end_time, $tutor_id, $name, $email, $phone, $comments,$paid,$rate){
+
+	$query = "select * from PT_Other_Appt where id = $ses_id";
+	$res = runquery($query);
+	$row = mysql_fetch_array($res);
+
+	if ($start_time!='')
+		$start_time = $start_time.":00";
+	if ($end_time!='')
+		$end_time = $end_time.":00";
+
+	if ($add_date!=''){
+		$set1.=($set1!='' ? ', ' : '')."date='$add_date'";
+	}else
+		$add_date = $row['date'];
+	if ($start_time!=''){
+		$set1.=($set1!='' ? ', ' : '')."start_time='$start_time'";
+	}else
+		$start_time = $row['start_time'];
+
+	if ($end_time!=''){
+		$set1.=($set1!='' ? ', ' : '')."end_time='$end_time'";
+	}else
+		$end_time = $row['end_time'];
+	if ($tutor_id!='')
+		$set1.=($set1!='' ? ', ' : '')."tutor_id='$tutor_id'";
+	if ($name!='')
+		$set1.=($set1!='' ? ', ' : '')."name='$name'";
+	if ($email!='')
+		$set1.=($set1!='' ? ', ' : '')."email='$email'";
+	if ($phone!='')
+		$set1.=($set1!='' ? ', ' : '')."phone='$phone'";
+	if ($comments!='')
+		$set1.=($set1!='' ? ', ' : '')."comments='$comments'";
+	if ($paid=='1')
+	{
+		$set1.=($set1!='' ? ', ' : '')."paid=1";
+		$set1.=($set1!='' ? ', ' : '')."rate='$rate'";
+	}
+	else
+	{
+		$set1.=($set1!='' ? ', ' : '')."paid=0";
+		$set1.=($set1!='' ? ', ' : '')."rate=''";
+	}
+
+
+	$hours = time_diff($end_time, $start_time);
+	if ($name == '')
+		$name = $row['name'];
+	if (($add_date!='' && $row['date']!=$add_date) || ($start_time!='' && $row['start_time']!=$start_time) || ($row['end_time']!=$end_time) || ($tutor_id!='' && $row['tutor_id']!=$tutor_id) || ($name!='' && $row['name']!=$name)){
+		//mofify google calendar
+		set_time_limit(0);
+		$tar = get_tut_info($row['tutor_id']);
+		if (!$GLOBALS['x_conf_cal_token'])
+			$token = gc_login();
+		$row['hours'] = time_diff($row['end_time'], $row['start_time']);
+		del_goog_cal($token, $row['date'], $row['start_time'], $row['hours'], $row['name'], $tar['gc_username'],$tar['gc_name']);
+		if ($tutor_id && $tutor_id!=$row['tutor_id']){
+			$tar = get_tut_info($tutor_id);
+			if (!$GLOBALS['x_conf_cal_token'])
+				$token = gc_login();
+		}
+		$hours = time_diff($end_time, $start_time);
+		add_goog_cal($token, $add_date, $start_time, $hours, $name, $tar['gc_username'],$tar['gc_name']);
+		set_time_limit(60);
+	}
+
+
+	$res = "UPDATE PT_Other_Appt SET $set1 where id = $ses_id" ;
+	runquery($res);
+
+	$res1 = "UPDATE PT_NT_Work_Hours SET
+	tutor_id='".$tutor_id."',
+	date='".$add_date."',
+	hours='".$hours ."',
+	rate='".$rate."',
+	description='Non-Tut Appt: ".$name."',
+	comments='".$comments."'
+	 where other_appt_id = $ses_id" ;
+	runquery($res1);
+}
+
+
+ //--- new function for registering a student to the class
+ function class_add_student($student_id, $class_id, $paid, $due, $learning_disability, $extended_time, $tutor_id, $other = NULL, $deposit = NULL){
+	 // fetch details from PTStudentInfo_New
+	 $insert1 = "";
+	 $insert2 = "";
+	$SQS = "select * from PTStudentInfo_New where id = '".$student_id."'";
+	$SRS = runquery($SQS);
+	$Sar = mysql_fetch_array($SRS);
+	$fid = $Sar['fid'];
+	$student_name = $Sar['first_name']." ".$Sar['last_name'];
+	$username = $Sar['first_name'];
+	$password = $Sar['last_name'];
+
+	 // fetch details from PT_Family_Info
+	$Fres = runquery("select * from PT_Family_Info where id = '".$fid."'");
+    $frow = mysql_fetch_array($Fres);
+    $parent_name = $frow['main_name'];
+    $email = $frow['main_email'];
+    $phone_number = $frow['main_phone'];
+
+	// if fee is empty fetch it from PT_SAT_Class_Info
+	$res_cl = runquery("select * from PT_SAT_Class_Info WHERE id='".$class_id."'");
+    $row_cl = mysql_fetch_array($res_cl);
+	$fee=$due;
+	if($fee=='')
+	{
+		 $fee=$row_cl['cost'];
+	}
+	$error=0;
+	/* echo $student_id."--------";
+	 die('stop here');*/
+	 if($parent_name!="" && $student_name!="")
+	 {
+		$insert1 = "INSERT INTO PT_TestPrep_Reg(parent_name, student_name, username, password, phone_number, email, learning_disability, extended_time, class, paid, fee, fid, student_id, tutor_id)
+	VALUES('$parent_name', '$student_name', '$username', '$password', '$phone_number', '$email', '$learning_disability', '$extended_time', '$class_id', '$paid', '$fee', '$fid', '$student_id', '$tutor_id')";
+		$chk_insert1=runquery($insert1);
+	 }
+
+//Add a session to the calendar and bill
+
+	if($fid!="" && $student_id!="" && $class_id!=1)
+	 {
+	 	$this_date = date('Y-m-d');
+		session_add2($this_date, "10:00:00", $fid, 1, $fee, 0, 2000, '', $student_id, $student_name,'','For LD SAT Prep Session  '.$row_cl['class_name']);
+	 }
+
+	$testlocation="";
+	if($row_cl['test_location']==""){
+		$testlocation=$row_cl['location'];
+	}
+	else
+	{
+		$testlocation=$row_cl['test_location'];
+	}
+
+
+
+	$ClQStr = "Update PT_SAT_Class_Info set enrolled = (enrolled+1) where id = '".$class_id."'";
+	$UPRS = runquery($ClQStr);
+
+
+	// send email
+if ($class_id <> 1){
+
+		$mail_body =  "Dear $parent_name,<br>
+	<br>
+	You are registered for Paul the Tutor's LD SAT Prep Class ".$row_cl['class_name'].". Please see the schedule of practice classes and practice tests below.
+	Thanks,<br>
+	<br>
+	<strong>Classes</strong><br>
+	Schedule: ".$row_cl['class_time']." <br>
+	Dates: ".$row_cl['SAT_date']." <br>
+	Location: ".$row_cl['location']." <br>
+	<br>
+	<strong>Practice Tests</strong> <br>
+	Intro Practice Test: ".$row_cl['practice_test_1']." <br>
+	Final Practice Test: ".$row_cl['practice_test_2']." <br>
+	Test Location: ".$testlocation." <br>
+	<br>
+	You can view all information about your class by going to <a href='www.paulthetutors.com/parents'>www.paulthetutors.com/parents</a><br>
+	<br>
+	<strong>Payment</strong><br>
+	Payment in full is due by the day of the first class or practice test. If you have not already paid online, you should receive a bill through email, or you can log into <a href='www.paulthetutors.com/parents'>www.paulthetutors.com/parents</a> to see your bill.  To pay your bill online go to <a href='www.paulthetutors.com/parents/ccpay.php'>Paul the Tutor's Online Payments</a>.  You can also give us a call at (510) 730-0390 to pay by phone.  If you prefer to pay be check, make it out to \"Paul the Tutor's\" and mail it to the address below, or drop it off at the Center.
+	<BR><BR>
+	Paul the Tutor's Education Center
+	4235 Piedmont Ave.
+	Oakland, CA 95616
+	<br><br>
+	<strong>Practice Test</strong> <br>
+	Remember that practice tests are essential to a student's improvement on the SAT. If you have not done so already, let us know if your student will  receive extended time on the actual SAT so that we can have the correct number of extended time tests available. Make sure that your student knows whether or not they will receive extended time.
+	You can see the results of your practice tests by going to <a href='www.paulthetutors.com/parents'>www.paulthetutors.com/parents</a><br>
+	<br>
+	<strong>Missed Tests</strong><br>
+	If you are unable to make the practice test, be sure to download a copy of the test and schedule here <a href='www.ldsatstudyguide.com/owners.php'>www.ldsatstudyguide.com/owners.php</a>   You will then be able to enter your answers and have the test automatically graded by going to <a href='http://www.paulthetutors.com/ldsatprep/students/satgrader.php'>http://www.paulthetutors.com/ldsatprep/students/satgrader.php</a> and entering your answers.
+	<br><br>
+	What to Bring to Class</strong><br>
+	Students must bring all class materials and their calculator to each class. Students will receive their classroom material on the first day of class. With regards to calculators,  I strongly recommend a TI-83 or TI-84.
+	<br><br>
+	<strong>Missed Classes</strong><br>
+	Recordings will be available online for students who miss a class. Additionally, private make-up sessions are available at our standard rates.
+	<br><br>
+	<strong>Homework</strong><br>
+	Students are expected to complete all homework assignments, including readings. Most of the practice SAT questions can be graded online, and students will be expected to enter their answers and review their results before each class.
+	You can check on your student's homework by going  to <a href='www.paulthetutors.com/parents'>www.paulthetutors.com/parents</a>
+	<br><br>
+	Please do not hesitate to contact us if you have any questions of concerns.<br>
+	<br>
+	Thanks,<br>
+	<br>
+	Paul the Tutor's Education Center<br>
+	info@paulthetutors.com <br>
+	(510) 730-0390<br>
+	www.paulthetutors.com<br>
+	4235 Piedmont Ave.,
+	Oakland, CA 94611";
+
+//--- set mail subject
+$mail_sub = "Registration in Paul the Tutor's ".$row_cl['class_name']." Prep Class";
+//-- set mail headers
+
+
+
+} else { // if the class_id is 1 it is one on one SAT Prep so the intro letter is different
+	$mail_body =  "Dear $parent_name,<br>
+	<br>
+	You are registered for One on One Test Prep with Paul the Tutor's Education Centers. Our goal is to provide your student with the most thorough one on one test prep experience possible. Please be sure to pass on any information about your student's strengths, weaknesses or tendencies to your tutor to ensure they fit their instruction to your student's needs.<br>
+	<br>
+	<Strong>What to Bring to Tutoring</strong><br>
+	Students must bring pencils, all prep material and their calculator to each session, regardless of subject. Students will receive their prep material on the first day of tutoring. With regards to calculators, we strongly recommend a TI-84.
+	<br><br>
+	<strong>Homework</strong><br>
+	Students are expected to complete all homework assignments, including reading, in the allotted time. Most of the practice test questions can be graded online. Students will be expected to enter their answers, review their results  and try to correct their mistakes before each session. To enter answers online, students should go to www.paulthetutors.com/login and follow the links to enter their answers.
+	Parents can see what homework has been assigned, and what has been completed by going to <a href='www.paulthetutors.com/parents'>www.paulthetutors.com/parents</a> following the test prep links.
+	<br><br>
+	<strong>Practice Test</strong> <br>
+	Remember that practice tests are essential to a student's improvement on any standardized test. Please do your best to ensure that your student is able to attend any scheduled practice tests. If you have not done so already, let us know if your student will receive extended time on the actual test so that we can have the correct number of extended time tests available. Make sure that your student knows whether or not they will receive extended time since this will help them better prepare for the test.
+	You can see the results of your student's practice tests by going to <a href='www.paulthetutors.com/parents'>www.paulthetutors.com/parents</a>.<br>
+	<br>
+	<strong>Missed Tests</strong><br>
+	If your student is unable to make the practice test at Paul the Tutor's, you can request an alternate date, have it administered at your home, or administer it yourself. Be sure to talk to your tutor about options for making up any missed tests.<br><br>
+
+	Please do not hesitate to contact us if you have any questions of concerns.<br>
+	<br>
+	Thanks,<br>
+	<br>
+	Paul the Tutor's Education Center<br>
+	info@paulthetutors.com <br>
+	(510) 730-0390<br>
+	www.paulthetutors.com<br>
+	4235 Piedmont Ave.,
+	Oakland, CA 94611";
+
+//--- set mail subject
+$mail_sub = "Registration in Paul the Tutor's One on One Test Prep";
+//-- set mail headers
+
+
+}
+
+// Always set content-type when sending HTML email
+$headers = "From: info@paulthetutors.com\r\n";
+$headers .= "Content-Type: text/html\r\n";
+//$headers .= "Reply-To: info@paulthetutors.com\r\n";
+$headers .= "CC: info@paulthetutors.com\r\n";
+//$headers .= "MIME-Version: 1.0\r\n";
+
+
+$mail_body="<html>
+	<head></head>
+	<body>".$mail_body."</body></html>";
+
+//if($error==0) //if data inserted succesfully, then send mail
+	mail($email, $mail_sub, $mail_body, $headers,'-finfo@paulthetutors.com');
+// echo "mail($email, $mail_sub, $mail_body, $headers,'-finfo@paulthetutors.com')";
+//  mail('info@miviram.com', $mail_sub, $mail_body, $headers,'-finfo@paulthetutors.com');
+//
+
+return $error;
+ }
+
+
+
+ /*-------------------------------------------------------------------
+Purpose: Newly Created To check whether entry made by parents for a student exists
+ INSERTS SELECT INPUT INTO A TABLE
+	disName - printed name
+	varName - name of field
+	disArray - display values [key displayed, value is value]
+	varSelected - Passed Value that should be initially selected.  not the displayed value
+	disComments - instructions for the field
+-------------------------------------------------------------------*/
+
+Function checkIfStudentExists($first_name, $lastname, $fid) {
+    $exists=0;
+	$SQS = "select id from PTStudentInfo_New where fid = '".$fid."' and LOWER(first_name) like '%".strtolower($first_name)."%' and LOWER(last_name) like '%".strtolower($lastname)."%'";
+
+	$SRS = runquery($SQS);
+	$Sar = mysql_fetch_array($SRS);
+	if(count($Sar)>0)
+	{
+		$exists=$Sar['id'];
+	}
+	else
+		$exists=0;
+	return $exists;
+}
+//  END FUNCTION
+
+/***********************************************************************
+funtion just_fam_search
+puts the family search box and either the dropdown, or the hidden variable
+input -
+returns - nothing.
+************************************************************************/
+function just_fam_search ($style="drop", $field_name="family_id", $fam_id=0, $label="", $callback="")
+{
+//	$style = "drop";
+
+?>
+
+    <link rel="stylesheet" type="text/css" href="../jquery.autocomplete.css" />
+<script type="text/javascript" src="../jquery.autocomplete.js"></script>
+<script>
+    $(document).ready(function(){
+        $("#fam_search").autocomplete("autocomplete.php", {
+               selectFirst: true
+        });
+
+		 $("#fam_search").result(function(event, data, formatted) {
+
+	        $("#<?php echo $field_name;?>").val(data[1]);
+    });
+    });
+</script>
+    <input name="fam_search" type="text" id="fam_search" size="60" <?php echo ($callback=="submit"?' onchange="this.form.submit()" ':'')?> >
+
+<?php
+if($style=='drop')
+{
+	echo "<br  /><br />";
+	echo fam_menu_updated("last",$field_name,$fam_id, $label,'',($callback=="submit"?' onchange="this.form.submit()" ':''));
+
+}
+else
+{
+	echo putHiddenField($field_name, $fam_id);
+}
+
+}// end just_fam_search
+
+
+/***********************************************************************
+put_fam_search($style, $field_name, $fam_id, $label, $callback)
+creates the text field which had jquery to find families
+***********************************************************************/
+
+function put_fam_search ($style="drop", $field_name="fid", $fam_id=0, $label="", $callback="")
+{
+?>
+
+<TR>
+<TD>
+<div align="right">Family </div>
+</TD>
+<TD>
+<?php
+ just_fam_search ($style, $field_name, $fam_id, $label, $callback);
+
+echo "</td></tr>";
+
+}
+
+
+/***********************************************************************
+funtion fam_menu_updated($style, $name, $fam_id, $label, $other)
+inputs: style(student or last); $inputname = the name of the select; $fam_id = the selected option; $label = the label of the first option
+outputs: a pull down menu for selecting a family
+***********************************************************************/
+function fam_menu_updated($style="student", $inputname="sid", $fam_id=0, $label="", $other="", $addevent=""){
+if ($other != "archive")
+  $table = "PT_Family_Info";
+else
+  $table = "ZZ_PT_Family_Info_Old";
+$FRS = runquery("select id, main_name from $table");
+
+  while ($far = mysql_fetch_array($FRS)){
+    $name = ""; $a = array();
+    $a = explode(" ", trim($far['main_name']));
+    $a = array_reverse($a);
+    foreach ($a as $m=>$n){
+      if ($a!='')
+        $name.= trim($n).($m == 0 ? ", " : "");
+    }
+
+	$students = "(";
+
+	$SQS = "select CONCAT (first_name, ' ', LEFT(last_name, 2)) as name from PTStudentInfo_New where archived <> 1 and fid = $far[id]";
+	$SRS = runquery($SQS);
+	while($namear = mysql_fetch_row($SRS)){
+		$students .= "$namear[0] ";
+	}
+
+	$students .= ")";
+
+
+
+    $lab_id = $far['id'];
+    $arr[$far['id']] = "$name $students ($lab_id)";
+
+  }
+  natcasesort ($arr);
+
+
+if ($other == "return_fam_name")
+  return $arr[$fam_id];
+!isset($ret) && $ret = '';
+$ret.='<select name="'.$inputname.'" id="'.$inputname.'" '.$addevent.'>
+      <option value="" selected>'.$label.'</option>';
+
+foreach ($arr as $k=>$v){
+  $ret.='<option value="'.$k.'" '.($fam_id == $k ? "selected" : "").'>'.$v.'</option>';
+
+}
+
+$ret.= '</select>';
+return $ret;
+
+} // end fam_menu
+/***********************************************************************
+funtion put_student_search($style, $name, $fam_id, $label, $other)
+inputs: style(student or last); $inputname = the name of the select; $fam_id = the selected family; $label = the label of the first option
+outputs: none
+objective: display family menu
+***********************************************************************/
+
+
+function put_student_search ($style="hidden", $field_name="student_id",  $student_id=NULL, $label="" , $callback="", $special = 'required')
+{
+
+//label should eventually by used for the css_style of the row and each cell
+	?>
+
+<TR>
+<TD>
+<div align="right">Student
+<?
+
+// echo " $label ";
+	  if(preg_match("/required/",$special)){
+	  	echo "<font color=\"#FF0000\">*</font>";
+	  }
+?>
+
+&nbsp; </div>
+</TD>
+<TD>
+<?
+
+just_student_search ($style, $field_name, $student_id, $label, $callback);
+
+echo " </td></tr>";
+
+} // end put_student_search
+
+/***********************************************************************
+funtion just_student_search
+puts the student search box and either the dropdown, or the hidden variable
+input -
+returns - nothing.
+************************************************************************/
+function just_student_search ($style="hidden", $field_name="student_id",  $student_id=NULL, $label="" , $callback="")
+{
+
+//	$style = "hidden";
+?>
+
+    <link rel="stylesheet" type="text/css" href="../jquery.autocomplete.css" />
+<script type="text/javascript" src="../jquery.autocomplete.js"></script>
+<script>
+    $(document).ready(function(){
+        $("#student_search").autocomplete("../includes/php_files/autocomplete_student.php", {
+               selectFirst: true
+        });
+
+		 $("#student_search").result(function(event, data, formatted) {
+
+	        $("#<?php echo $field_name;?>").val(data[1]);
+    });
+    });
+</script>
+
+    <input name="student_search" type="text" id="student_search" size="60"/
+
+<?php
+if($callback=="submit"){
+   echo "onchange=\"this.form.submit()\"";
+} else if (!isEmpty($callback)){
+	echo "onchange=\"$callback\"";
+}
+
+
+   echo ">";
+
+
+	if($style=='drop')
+	{
+		echo "<br  /><br />";
+		echo studentid_menu_updated($student_id, $field_name, $label, ($callback=="submit"?' onchange="this.form.submit()" ':''));
+
+	}
+	else
+	{
+		putHiddenField($field_name, $student_id);
+	}
+}// end just_student_search
+/***********************************************************************
+funtion studentid_menu_updated($style, $name, $fam_id, $label, $other)
+***********************************************************************/
+
+function studentid_menu_updated($selected_value=NULL, $name="student_id", $label, $callback="")
+{
+  !$opts && $opts=array();
+
+
+
+  ?>
+  <select id="<?=$name?>" name="<?=$name?>" <?=$callback?>>
+         <option value="">Select Student</option>
+       <?
+
+
+$where = " where 1 = 1 ";
+if(isset($opts['all']) && $opts['all']) {
+
+} else {
+
+}
+
+$where = "$where and archived = 0";
+
+echo "where is $where <BR>";
+
+$QStrsi = "select id, first_name, last_name, id from PTStudentInfo_New $where ORDER BY first_name,last_name DESC";
+if(!($siRS = mysql_query($QStrsi))){
+  echo "QStr:  $QStrsi <BR>" . mysql_error() . "<BR><BR>";
+}
+
+$arsis[0] = $label;
+while($arsi = mysql_fetch_array($siRS)){
+  $sel_str = $arsi['first_name']." ".$arsi['last_name'];
+?>
+       <option value="<?=$arsi['id']?>" <?=$selected_value==$arsi['id']?"Selected":"";?>><?=$sel_str?></option>
+<? } ?>
+
+       <option value="-1"> Other </option>
+
+
+        </select>
+  <?
+} // end studentid_menu
+
+// Set Zend path
+$zendLibraryPath = $_SERVER['DOCUMENT_ROOT'] . '/includes/library';
+set_include_path(get_include_path() . PATH_SEPARATOR . $zendLibraryPath);
+
+// load Zend Gdata libraries
+require_once 'Zend/Loader.php';
+Zend_Loader::loadClass('Zend_Gdata');
+Zend_Loader::loadClass('Zend_Gdata_ClientLogin');
+Zend_Loader::loadClass('Zend_Http_Client');
+Zend_Loader::loadClass('Zend_Gdata_Query');
+Zend_Loader::loadClass('Zend_Gdata_Feed');
+/***********************************************************************
+/* Adds a Gmail contact; $contact array goes like this:
+
+    $contact['name']
+    $contact['middle_name']
+    $contact['last_name']
+    $contact['home']
+    $contact['mobile']
+    $contact['work']
+    $contact['email']
+    $contact['company']
+    $contact['position']
+
+   This assumes that all fields are set, if that's not the case, google
+   will return an error indicating what field is missing
+*/
+function addContact($contact, $username, $password) {
+    try {
+        // perform login and set protocol version to 3.0
+        $client = Zend_Gdata_ClientLogin::getHttpClient(
+            $username, $password, 'cp');
+        $gdata = new Zend_Gdata($client);
+        $gdata->setMajorProtocolVersion(3);
+
+        // create new entry
+        $doc  = new DOMDocument();
+        $doc->formatOutput = true;
+        $entry = $doc->createElement('atom:entry');
+        $entry->setAttributeNS('http://www.w3.org/2000/xmlns/' ,
+            'xmlns:atom', 'http://www.w3.org/2005/Atom');
+        $entry->setAttributeNS('http://www.w3.org/2000/xmlns/' ,
+            'xmlns:gd', 'http://schemas.google.com/g/2005');
+        $doc->appendChild($entry);
+
+        // add name element
+        $name = $doc->createElement('gd:name');
+        $entry->appendChild($name);
+        $givenName = $doc->createElement('gd:givenName', $contact['first_name']);
+        $name->appendChild($givenName);
+        $middleName = $doc->CreateElement('gd:additionalName', $contact['middle_name']);
+        $name->appendChild($middleName);
+        $lastName = $doc->CreateElement('gd:familyName', $contact['last_name']);
+        $name->appendChild($lastName);
+
+        // Add Home phone
+        $home = $doc->createElement('gd:phoneNumber', $contact['home']);
+        $home->setAttribute('rel', 'http://schemas.google.com/g/2005#home');
+        $entry->appendChild($home);
+        // Add mobile phone
+        $mobile = $doc->createElement('gd:phoneNumber', $contact['mobile']);
+        $mobile->setAttribute('rel', 'http://schemas.google.com/g/2005#mobile');
+        $entry->appendChild($mobile);
+        // Add work phone
+        $work = $doc->createElement('gd:phoneNumber', $contact['work']);
+        $work->setAttribute('rel', 'http://schemas.google.com/g/2005#work');
+        $entry->appendChild($work);
+
+        // Add email
+        $email = $doc->createElement('gd:email');
+        $email->setAttribute('address' ,$contact['email']);
+        $email->setAttribute('rel' ,'http://schemas.google.com/g/2005#home');
+        $entry->appendChild($email);
+
+        // Add organization
+        $org = $doc->createElement('gd:organization');
+        $org->setAttribute('rel' ,'http://schemas.google.com/g/2005#work');
+        $entry->appendChild($org);
+
+        $orgName = $doc->createElement('gd:orgName', $contact['company']);
+        $org->appendChild($orgName);
+
+        // Add position
+        $orgPosition = $doc->createElement('gd:orgTitle', $contact['position']);
+        $org->appendChild($orgPosition);
+
+        // insert entry
+        $entryResult = $gdata->insertEntry($doc->saveXML(),
+        'http://www.google.com/m8/feeds/contacts/default/full');
+        echo '<h3>Contact ' . $contactName . ' added! Please check your gmail address book</h3>';
+    } catch (Exception $e) {
+        die('Google returned an error:<br><br>' . $e->getMessage());
+    }
+}
+
+
+/***********************************************************************
+	ss00 functions
+/************************************************************************/
+
+function Schedule_Changed($arrSchedule1Data, $arrSchedule2Data) {
+	$bool = false;
+
+	return $bool || ($arrSchedule1Data['id '] != $arrSchedule2Data['id '])
+		|| ($arrSchedule1Data['student_id'] != $arrSchedule2Data['student_id'])
+		|| ($arrSchedule1Data['tid'] != $arrSchedule2Data['tid'])
+		|| ($arrSchedule1Data['start_date'] != $arrSchedule2Data['start_date'])
+		|| ($arrSchedule1Data['end_date'] != $arrSchedule2Data['end_date'])
+		|| ($arrSchedule1Data['start_time'] != $arrSchedule2Data['start_time'])
+		|| ($arrSchedule1Data['hour'] != $arrSchedule2Data['hour'])
+		|| ($arrSchedule1Data['minutes'] != $arrSchedule2Data['minutes'])
+		|| ($arrSchedule1Data['ampm'] != $arrSchedule2Data['ampm'])
+		|| ($arrSchedule1Data['dow'] != $arrSchedule2Data['dow'])
+		|| ($arrSchedule1Data['hours'] != $arrSchedule2Data['hours'])
+		|| ($arrSchedule1Data['rate'] != $arrSchedule2Data['rate'])
+		|| ($arrSchedule1Data['pay'] != $arrSchedule2Data['pay'])
+		|| ($arrSchedule1Data['location_id'] != $arrSchedule2Data['location_id'])
+		|| ($arrSchedule1Data['comments'] != $arrSchedule2Data['comments']);
+}
+
+function get_Schedule_Data($intScheduleID) {
+	$QStr = "select * from PTSchedInfo2 where id = '$intScheduleID'";
+	$arrFieldsVals = array();
+
+	$FieldsRS = runquery($QStr);
+	$arrFieldsVals = mysql_fetch_array($FieldsRS);
+
+	return $arrFieldsVals;
+}
+
+
+/***********************************************************************
+	Edit_schedule_sessions
+	changes the sessions of schedule
+	input: schedule id, start_date, end_date
+	output: none
+/************************************************************************/
+
+function Edit_schedule_sessions($intScheduleID, $arrNewScheduleData, $boolLogged=true) {
+
+	$strResultLog = "A scheduled was modified: \n";
+
+	//simplifiying the code, everytime the dates are modified, old sessions are deleted and the new ones are added.
+
+	//delete older sessions
+	$strResultLog .= "Sessions deleted: ";
+	$strResultLog .= Delete_sched_sessions($intScheduleID, "","", $boolLogged);
+	//add new sessions
+	$strResultLog .= "Sessions added: ";
+	$strResultLog .= Add_sched_sessions($arrNewScheduleData, $boolLogged);
+
+	return $strResultLog;
+
+}
+
+/***********************************************************************
+	End_schedule
+	drops the sessions after a specific date ands edit the end date of a schedule
+	input: arrScheduleData (contains only schedule id, new end date and tutor id)
+	date is input as mm-dd-yyyy and converted
+	output: none
+/************************************************************************/
+function End_schedule($arrScheduleData,$notify=TRUE) {
+
+ printarray($arrScheduleData);
+
+
+	$new_end_date = $show_end_new = $arrScheduleData['end_date'];
+	$db_end_new = format_date_db($show_end_new);
+	$sched_id = $arrScheduleData['id'];
+	$db_end_old = singlequery("select end_date from PTSchedInfo2 where id = $sched_id");
+	$old_end_date = format_date_print($db_end_old);
+
+	$sched_str = return_sched_details($sched_id);
+
+	$strWhere = " id = '" . $arrScheduleData['id'] . "'";
+
+
+
+	//drop sessions after said date
+
+
+//	print_r($arrScheduleData);
+
+	$endQS = "update PTSchedInfo2 set end_date = '$db_end_new' where id = $sched_id";
+
+	$msg = runquery($endQS);
+// since the query is an update query, runquery returns the number of effected rows. msg is a number if all goes well. If there was a problem, msg should be a string, or 0.
+
+	if ($msg >= 1){	//should run unless no rows were effected
+
+
+		$mailmsg = "<HTML>The End Date for the following schedule has been modified:<BR> $sched_str<BR><BR>The old end date was: $old_end_date <BR>The new end date is: $new_end_date.<BR><BR> The following sessions were deleted:";
+
+// delete_sessions
+
+		$mailmsg .= Delete_sched_sessions($arrScheduleData['id'], $db_end_new, '', false);
+
+		$headers = "From: sched_end@paulthetutors.com \r\n";
+		$headers .= "MIME-Version: 1.0\r\n";
+		$headers .= "Content-Type: text/html; charset=ISO-8859-1\r\n";
+
+		if ($folder == "admin") {
+//		  $tut = tutor_info($arrScheduleData['tid']);
+//		  ptts_mail($tut['email'], "schedule changed", $mailmsg) ;
+		}
+
+		ptts2_mail("paul@paulthetutors.com", "sched $sched_id ended on $show_end_new", $mailmsg, $headers) ;
+
+	} else {echo "message is $msg and $msg_num";}
+
+
+}
+
+
+/***********************************************************************
+	Delete_schedule
+	Marks the schedule as archived and drops the sessions after a specific date
+	input: arrScheduleData (contains only schedule id, new end date and tutor id (end date will be ))
+	output: none
+/***********************************************************************/
+function Delete_schedule($input_sched_id, $notify = TRUE) {
+
+	$del_sched_id = (is_array($input_sched_id)?$input_sched_id['id']:$input_sched_id);
+//	$sched_id = $input_sched_id['id'];
+	$aQS = "update PTSchedInfo2 set archived = 1 where id = $del_sched_id";
+	$msg = runquery($aQS);
+
+	$del_msg = Delete_sched_sessions($del_sched_id);
+
+
+
+
+	if($notify){
+
+		$sched_str = return_sched_details($del_sched_id);
+
+
+		$mailmsg = "<html><body>The following schedule has been deleted:";
+		$mailmsg .= $sched_str . " <BR><BR> The following sessions were also deleted:<BR>";
+		$mailmsg .= $del_msg;
+		if ($folder == "admin") {
+//		  $tut = tutor_info(singlequery("select tutor_id from PT_SchedInfo2 where id = $del_sched_id"));
+//		  ptts_mail($tut['email'], "schedule changed", $mailmsg) ;
+		}
+
+		$mailmsg .= "</body></html>	";
+
+		$headers = "From: sched_del@paulthetutors.com \r\n";
+		$headers .= "MIME-Version: 1.0\r\n";
+		$headers .= "Content-Type: text/html; charset=ISO-8859-1\r\n";
+
+
+		ptts2_mail("paul@paulthetutors.com", "schedule deleted", $mailmsg, $headers) ;
+
+	}
+
+
+}
+/***********************************************************************
+function Edit_schedule_details($arrScheduleData, $dtAfterDate = null) {
+
+/***********************************************************************/
+function Edit_schedule_details($arrScheduleData, $dtAfterDate = null) {
+
+
+/* save the data for the later update */
+	$sched_id1 = $arrScheduleData['id'];
+	$sched_info1 = return_sched_details($sched_id1);
+	$enddate2 = $arrScheduleData['end_date'];
+
+echo "the end date selected is $dtAfterDate <BR> and the schedule id is $sched_id1<BR>";
+
+//if an after date is given, then the changes only apply to sessions on the given date, or after it
+// will end the old schedule the day before the end date, and insert a new sessions starting with the end date
+	if(!(isEmpty($dtAfterDate))) {
+		$yenddate = format_date_db($dtAfterDate);
+
+		$enddate1 = date('m-d-Y', strtotime($yenddate .' -1 day'));
+		$arrScheduleData['end_date'] = $enddate1;
+		// enddate1 is the end date of the first sessions
+
+echo "enddate1 is $enddate1 one day before $yenddate<BR><BR>";
+//end the schedule the day before the start of the new schedule
+		$deleted_sessions = End_schedule($arrScheduleData, TRUE);
+
+//set the start date into the array
+		$arrScheduleData['start_date'] = format_date_db($dtAfterDate);
+		$arrScheduleData['end_date'] = format_date_db($enddate2);
+		$sched_ar = Insert_schedule($arrScheduleData,FALSE,"both"); //inserting new schedule. no notification sent.
+		$sched_str2 = $sched_ar["str"];
+		$sched_id2 = $sched_ar["id"];
+		$sched_info2 = return_sched_details($sched_id2);
+
+
+		$mailmsg = "Schedule $sched_id1 was altered as of $dtAfterDate.<BR>Old Info:<BR>";
+		$mailmsg .= $sched_info1;
+		$mailmsg .= "New schedule will be:<BR> $sched_info2 <BR><BR>";
+
+
+		$mailmsg .= "The following sessions were added in consequence: <BR>$sched_str2<BR><BR>";
+		$mailmsg .= "The following sessions were deleted in consequence: <BR>$deleted_sessions<BR><BR>";
+
+	} else { // if not end date is given, we will delete the old schedule, and create a new one
+
+		$deleted_sessions = Delete_schedule($sched_id1,FALSE);
+		$sched_ar = Insert_schedule($arrScheduleData,FALSE);
+		$added_sessions = $sched_ar["str"];
+		$sched_id2 = $sched_ar["id"];
+
+		$mailmsg = "There was a schedule change<BR> The old schedule was: $sched_info1 <BR><BR> the new schedule is: $new_sched<BR><BR>";
+
+		$mailmsg .= "The following sessions were added in consequence: <BR>$added_sessions<BR><BR>";
+		$mailmsg .= "The following sessions were deleted in consequence: <BR>$deleted_sessions<BR><BR>";
+
+	}
+
+
+		$headers = "From: sched_change@paulthetutors.com \r\n";
+		$headers .= "MIME-Version: 1.0\r\n";
+		$headers .= "Content-Type: text/html; charset=ISO-8859-1\r\n";
+
+		if ($folder == "admin") {
+//		  $tut = tutor_info($arrScheduleData['tid']);
+//		  ptts2_mail($tut['email'], "schedule changed", $mailmsg, $headers) ;
+		}
+		ptts2_mail("paul@paulthetutors.com", "schedule changed", $mailmsg, $headers) ;
+
+
+}
+
+/***********************************************************************
+	Function Insert_Schedule
+	input: arrScheduleData (array containing all information related to a schedule) boolLogged
+	output: insert result (string)
+/************************************************************************/
+
+function Insert_schedule($arrScheduleData, $boolNotify=1, $return_val=both) {
+
+// printarray($arrScheduleData);
+
+	$msg = InsertFields('PTSchedInfo2', $arrScheduleData, $arMandFields, 'id', $tdStyle, $strWhere);
+
+	//insert the dates in the appointment
+	$arrScheduleData['sched_id'] = $arrScheduleData['id'] = $sched_id = $msg;
+
+		$sched_str = return_sched_details($sched_id);
+		$ses_str = Add_sched_sessions ($arrScheduleData);
+
+		$mailmsg = "<html><body>The following schedule was added:<br> $sched_str <br><br> $ses_str";
+
+		$mailmsg .= "</body></html>	";
+
+		$headers = "From: sched_add@paulthetutors.com \r\n";
+		$headers .= "MIME-Version: 1.0\r\n";
+		$headers .= "Content-Type: text/html; charset=ISO-8859-1\r\n";
+
+
+	//end insert dates
+	if ($folder == "admin") {
+//		$tut = tutor_info($arrScheduleData['tid']);
+//		ptts2_mail($tut['email'], "schedule added", $mailmsg) ;
+	}
+	if($boolNotify != 0)
+		ptts2_mail("paul@paulthetutors.com", "schedule added", $mailmsg, $headers) ;
+
+	if($return_val == "id")
+		return $sched_id;
+	if($return_val == "str")
+		return $sched_str;
+	if($return_val == "both"){
+		$sched_info = array( "id"=>$sched_id, "str"=>$sched_str,);
+		return  $sched_info;
+	}
+}
+
+/***********************************************************************
+	Delete_sched_sessions
+	deletes all sessions related to a schedule between two dates
+	input: intScheduleID, dtStartDate, dtEndDate. boolLogged
+	bootLogger = if true output: deletion result (string)
+/************************************************************************/
+
+function Delete_sched_sessions ($intScheduleID, $dtStartDate='', $dtEndDate='', $boolLogged = true) {
+
+//$boolLogged will always be true since we always want to delete sessions using the session_del function
+	$boolLogged = true;
+	$strExtraCond = "";
+	if(!isEmpty($dtStartDate))
+		$strExtraCond .= " AND date > '" . format_date_db($dtStartDate) . "'";
+
+	// end date condition not used now... might be needed in the future.
+	if(!isEmpty($dtEndDate))
+		$strExtraCond .= " AND date < '" . format_date_db($dtEndDate) . "'" ;
+
+	$qry_getSessions = "SELECT id, date FROM PTAddedApp WHERE sched_id = '$intScheduleID'" . $strExtraCond;
+
+echo "get sessions query is $qry_getSessions <BR>";
+
+	$resSessionsToDelete = runquery($qry_getSessions);
+
+	if ($boolLogged = true) { // for now we always do this because we always remove sessions using session_del()
+
+	while($rowSession=mysql_fetch_array($resSessionsToDelete)) {
+			$temp_date = format_date_print($rowSession['date']);
+			$temp_sesid = $rowSession['id'];
+			$strResultLog .= "$temp_date ($temp_sesid) <BR> ";
+			session_del($rowSession['id'], '', array('email_paul'=>false,'email_tut'=>false));
+		}
+	} else {
+		$qry_deleteSessions	= "DELETE FROM PTAddedApp WHERE sched_id = '$intScheduleID'" . $strExtraCond;
+		$strResultLog = runquery($qry_deleteSessions);
+		echo "none log delte query is $qry_deleteSessions";
+		// $strResultLog = mysql_affected_rows();
+	}
+
+	return $strResultLog;
+}
+
+/***********************************************************************
+	Add_sched_sessions
+	adds sessions to an schedule
+	input: 	arrScheduleData (array containing all information related to a schedule)
+			boolLogged boolean to specify if the return string will be all the sessions or just the count
+	output: deletion result (string)
+/************************************************************************/
+
+function Add_sched_sessions ($arrScheduleData, $boolLogged = true) {
+
+	$strResultLog = "Sessions added on: ";
+	$strTemp = "";
+	$intCounter = 0;
+	$arrScheduleDays = get_sched_dates($arrScheduleData['dow'], $arrScheduleData['start_date'], $arrScheduleData['end_date'], '');
+
+
+	foreach ($arrScheduleDays as $k=>$v){
+
+		$temp_sesid = session_add2($v, $arrScheduleData['start_time'],$arrScheduleData['fid']
+			, $arrScheduleData['hours'], $arrScheduleData['rate'], $arrScheduleData['pay']
+			, $arrScheduleData['tid'],'',$arrScheduleData['student_id'], $arrScheduleData['name']
+			, $arrScheduleData['id'],'',array('email_paul'=>false,'email_tut'=>false,'returnid'=>1)
+			, $arrScheduleData['location_id']);
+		$intCounter ++;
+
+
+		$temp_date = format_date_print($v);
+
+		$strTemp .= "<br> $temp_date ($temp_sesid) ";
+
+
+
+	}
+
+	//the boolLogged parameter will only change the amount of info returned by the function
+	if($boolLogged)
+		$strResultLog .= "- $strTemp <BR>";
+	else
+		$strResultLog .= $intCounter;
+
+	return $strResultLog;
+}
+
+
+?>

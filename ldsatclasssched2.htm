@@ -1,0 +1,63 @@
+<?
+$classnum = $classid;
+
+$QStr = "select * from PT_SAT_Class_Info where id = $classnum";
+$RS = runquery($QStr);
+$marAr = mysql_fetch_array($RS);
+?>
+
+
+
+<link href="NewPTTcss.css" rel="stylesheet" type="text/css">
+<style type="text/css">
+<!--
+.plain {
+	font-weight: normal;
+}
+.style1 {
+	font-size: 14px;
+	font-weight: bold;
+}
+-->
+</style>
+</head>
+
+<body>
+<table width="686" border="0" cellpadding="3" cellspacing="0" background="images/flowbg.gif">
+  <tr>
+    <td height="29" colspan="2" valign="top"><span class="Head1_Green"> LD SAT
+        Class <?=$classnum;?> </span>
+      <div align="right"></div></td>
+    <td width="214" rowspan="2" align="center" valign="bottom">	  <div align="center"><a href="http://www.tinyurl.com/ldsatstudyguide"><img src="images/ldsat_cover_108_pix.jpg" width="149" height="188" border="0"><br>
+        <br>
+        <strong>Buy The LD SAT Study Guide</strong></a><br>
+    </div></td>
+  </tr>
+  <tr>
+    <td width="37" height="279" valign="top">&nbsp;</td>
+    <td width="417" height="279" valign="top"><span class="uline">
+	<strong>Class
+          <?=$marAr['id']?>
+    </strong></span> <br>
+    <strong>Schedule:</strong>
+    <?=$marAr['dow']?>
+    <?=$marAr['class_time']?>
+    <br>
+    <strong>Dates:</strong>
+    <?
+$startint = strtotime($marAr['start_date']);
+$endint = strtotime($marAr['end_date']);
+echo date("M jS ", $startint) .' - '. date("M jS ", $endint); ?>
+    <br>
+    <?
+$dateint1 = strtotime($marAr['practice_test_1']);
+$dateint2 = strtotime($marAr['practice_test_2']);
+?>
+    <strong>Practice Tests 1:</strong> <? echo date("g:i a l M jS ", $dateint1); ?> <BR>
+    <strong>Practice Tests 2:</strong> <? echo date("g:i a l M jS ", $dateint2); ?> <strong><br>
+    Location:</strong> <? echo $marAr['location']; ?><br>
+    <strong>Comments:</strong> <? echo $marAr['Comment']; ?></td>
+  </tr>  
+</table>
+</body>
+</html>

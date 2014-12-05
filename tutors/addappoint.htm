@@ -1,0 +1,140 @@
+<?php 
+
+
+$formcss = $strAbsPath . "../../../../styles/form.css";
+
+$msg = "";
+if(isset($_POST['saveappoint']))
+{
+	$name = $_POST['name'];
+	$desc = $_POST['description'];
+	
+	$tid = $tutor_id;
+	
+	$date = $_POST['startdate'];
+	$date_arr = explode('-',$date);
+	$start_date = $date_arr[2]."-".$date_arr[0]."-".$date_arr[1];
+	
+	
+	
+	$date = $_POST['enddate'];
+	$date_arr = explode('-',$date);
+	$end_date = $date_arr[2]."-".$date_arr[0]."-".$date_arr[1];
+	
+	
+	
+	
+	
+	
+	$start_time = date("G:i:s",strtotime($_POST['starttime']));
+	$end_time = date("G:i:s",strtotime($_POST['endtime']));
+	
+	
+	/*$start_time_array = explode(':',$start_time);
+	$end_time_array = explode(':',$end_time);
+	
+	
+	$start_hours = $start_time_array[0];
+	$start_mins = $start_time_array[1];
+	if(strlen($start_mins)==1)$start_mins='0'.$start_mins;
+	$start_ampm = $start_time_array[2];
+	
+	$starttime = date("G:i:s", strtotime("$start_hours:{$start_mins}$start_ampm"));
+	$clock_out = date("G:i:s", strtotime("$end_hours:{$end_mins}$end_ampm"));
+	
+	
+	
+	$end_hours = $end_time_array[0];
+	$end_mins = $end_time_array[1];
+	if(strlen($end_mins)==1)$end_mins='0'.$end_mins;
+	
+	$end_ampm = $end_time_array[2];
+	
+	*/
+	
+	
+	$query = "INSERT INTO PT_Recurring_Appt (tid, start_date, end_date, start_time, end_time, name, description) ";
+	$query.= "VALUES ($tid, '$start_date', '$end_date', '$start_time', '$end_time', '$name', '$desc')";
+	
+	
+	if(mysql_query($query))
+		$msg = "Successfully added an appointment";
+	else
+		$msg = "Error saving appointment";
+}
+
+
+?>
+
+
+<link rel="stylesheet" type="text/css" href="/styles/paulthetutor.css" />
+<link rel="stylesheet" type="text/css" href="/styles/form.css" />
+
+
+<link rel="stylesheet" type="text/css" href="../includes/jquery-ui-1.8.4.custom.css"/>
+<script type="text/javascript" src="../includes/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../includes/jquery-ui-1.8.4.custom.min.js"></script>
+<script type="text/javascript" src="../includes/jquery.timeentry.min.js"></script>
+
+
+<script type="text/javascript">
+
+$(document).ready(function(){
+
+	$(".date").datepicker({ dateFormat: 'mm-dd-yy'  });
+	$(".time").timeEntry();
+			
+	
+});
+
+</script>
+
+
+<div style="text-align:center">
+
+		<?=$msg?>
+</div>
+
+<form method="POST" action="addappoint.php">  
+<fieldset>  
+<legend>New Appointment</legend>  
+<ol>   
+<li>  
+<label for="startdate">Start Date:</label>  
+<input id="startdate" name="startdate" class="text date" type="text" />  
+</li>  
+
+<li>  
+<label for="enddate">End Date</label>  
+<input id="enddate" name="enddate" class="text date" type="text" />  
+</li> 
+
+<li>  
+<label for="starttime">Start Time</label>  
+<input id="starttime" name="starttime" class="text time" type="text" />  
+</li> 
+
+<li>  
+<label for="endtime">End Time</label>  
+<input id="endtime" name="endtime" class="text time" type="text" />  
+</li> 
+
+<li>  
+<label for="name">Name</label>  
+<input id="name" name="name" class="text" type="text" />  
+</li> 
+
+<li>  
+<label for="name">Description</label>  
+
+<textarea id="description" name="description" class="text" type="text"></textarea>
+</li> 
+
+
+</ol>  
+</fieldset>  
+<fieldset class="submit">  
+<input name="saveappoint" class="submit" type="submit"  
+value="Create" />  
+</fieldset>  
+</form>

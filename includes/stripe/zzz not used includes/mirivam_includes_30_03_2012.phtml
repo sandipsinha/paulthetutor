@@ -1,0 +1,416 @@
+<?
+
+/*-------------------------------------------------------------------
+Purpose: Newly Created To provide an event on click of a checkbox
+ INSERTS Check Box  INTO A TABLE
+	disName - printed name
+	varName - name of field
+	varChecked - is boxed checked variable is either "checked" or blank, and is echoed regardless
+	disLabel - instructions for the field
+-------------------------------------------------------------------*/
+
+Function putCheckBoxInputEvent($disName, $varName, $varChecked, $varEvent) {
+?>
+   <tr>
+	<td>&nbsp;</td>
+	 <td>
+		<input  type="checkbox" id="<? echo $varName;?>" name="<? echo $varName; ?>" value="checked" <? echo $varChecked; ?> onclick="<? echo $varEvent; ?>">&nbsp;&nbsp;
+		<?echo $disName ?>	
+	</td>
+   </tr>
+<? }
+// END FUNCTION
+
+
+/*-------------------------------------------------------------------
+Purpose: Newly Created To provide with a tr with an id (Generally Used with show/hide js feature)
+ INSERTS SELECT INPUT INTO A TABLE
+	disName - printed name
+	varName - name of field
+	disArray - display values [key displayed, value is value]
+	varSelected - Passed Value that should be initially selected.  not the displayed value
+	disComments - instructions for the field
+-------------------------------------------------------------------*/
+
+Function putSelectInputShow($disName, $varName, $disArray, $varSelected, $strComment, $special, $labelFirst ='', $show,$set) {
+?>
+   <tr id="<?php echo $show;?>" <?php echo ($set=='true'?'style="visibility:visible;padding-bottom:10px;"':'style="visibility:hidden;padding-bottom:10px;"')?>>
+	<td   valign="top">
+	  <div align="right">
+<? 	  echo $disName;
+	  if(preg_match("/required/",$special)){
+	  	echo "<font color=\"#FF0000\">*</font>";
+	  }
+
+?>
+
+	  </div>
+	</td>
+     <td>
+
+        <select name="<? echo $varName; ?>">
+ 		<option value=""
+<? 		If (!(isset($varSelected))){
+			echo "selected";
+		}
+	echo ">$labelFirst</option>";
+
+		while (list ($key, $val) = each ($disArray)) {
+			echo "<option value=\"$key\"";
+			If ($varSelected == $val){
+				echo " selected ";
+			}
+			echo ">$val </option> \r";
+		}
+		echo "</select> $strComment</td></tr>";
+}
+// END FUNCTION
+
+/* -------------------------------------------------------------------
+Purpose: Newly Created To provide with a tr with an id (Generally Used with show/hide js feature)
+INSERTS TEXT INPUT INTO A TABLE
+	disName - printed name
+	varName - name of field
+	varLen - length of text field
+	disLen - size of text box
+	varVal - value of text field
+	strComment - instructions for the field
+	special - wildcar for required, currency, etc....
+-------------------------------------------------------------------	*/
+Function putTextFieldShow($disName, $varName, $varLen, $disLen, $varVal, $strComment, $special,$show,$set) {
+if(isEmpty($varLen)){
+	$varLen = 50;
+}
+?>
+
+<tr valign="middle" id="<?php echo $show;?>" <?php echo ($set=='true'?'style="visibility:visible;padding-bottom:10px;"':'style="visibility:hidden;padding-bottom:10px;"')?>>
+	<td>
+	  <div align="right" valign="middle">
+	  <? echo $disName;
+	  if(preg_match("/required/",$special)){
+	  	echo "<font color=\"#FF0000\">*</font>";
+	  }
+	  	if(!(isEmpty($strComment))){
+		
+		echo "<span class=\"form_comments\"> <br>$strComment </span>";
+	}	
+
+	  ?>
+
+	  </div>
+	</td>
+	<td>
+<?
+	if(preg_match("/currency/",$special)){
+		echo "$";
+	}
+	echo "<input type=\"text\" name=\"$varName\" size=\"$disLen\" maxlength=\"$varLen\" value=\"$varVal\"> ";
+?>
+	</td>
+   </tr>
+<? }
+//END FUNCTION
+
+
+/*-------------------------------------------------------------------
+Purpose: Newly Created To provide an event on selection (Generally Used with show/hide js feature)
+ INSERTS SELECT INPUT INTO A TABLE
+	disName - printed name
+	varName - name of field
+	disArray - display values [key displayed, value is value]
+	varSelected - Passed Value that should be initially selected.  not the displayed value
+	disComments - instructions for the field
+-------------------------------------------------------------------*/
+
+Function putSelectInputOnChange($disName, $varName, $disArray, $varSelected, $strComment, $special, $labelFirst ='',$event) {
+?>
+   <tr>
+	<td   valign="top">
+	  <div align="right">
+<? 	  echo $disName;
+	  if(preg_match("/required/",$special)){
+	  	echo "<font color=\"#FF0000\">*</font>";
+	  }
+
+?>
+
+	  </div>
+	</td>
+     <td>
+
+        <select name="<? echo $varName; ?>" id="<? echo $varName; ?>" <?php echo $event ?>>
+ 		<option value=""
+<? 		If (!(isset($varSelected))){
+			echo "selected";
+		}
+	echo ">$labelFirst</option>";
+
+		while (list ($key, $val) = each ($disArray)) {
+			echo "<option value=\"$key\"";
+			If ($varSelected == $val){
+				echo " selected ";
+			}
+			echo ">$val </option> \r";
+		}
+		echo "</select> $strComment</td></tr>\r";
+}
+// END FUNCTION
+
+function get_sched_dates1($dow, $startdate, $enddate, $other=''){
+	//echo $dow." - ". $startdate." - ".$enddate;
+	//die('stop');
+	$arr_dates = array();
+	$startdate2 = $startdate;
+	$enddate2 = $enddate;
+	 
+	if($dow!="0") 
+	{		
+	//die('stoppp');
+		if (!is_int($dow)){ 
+			while(date("l", strtotime($startdate2))!=$dow)
+				$startdate2 = date('Y-m-d', strtotime($startdate2." +1 day"));
+	 	}else{
+			while(date("w", strtotime($startdate2))!=$dow)
+				$startdate2 = date('Y-m-d', strtotime($startdate2." +1 day"));
+		}
+			while(strtotime($startdate2) <= strtotime($enddate2)){
+			if ($arr_dates[0] == '')
+				$arr_dates[] = $startdate2;
+			$startdate2 = date('Y-m-d', strtotime($startdate2 . " +1 week"));
+			if (strtotime($startdate2)<=strtotime($enddate2))
+				$arr_dates[] = $startdate2;
+		}
+	}
+	else
+	{
+		//die('inside other condition when single event');
+		$startdate2 = date('Y-m-d', strtotime($startdate2));
+		$arr_dates[] = $startdate2; 
+	}
+	
+	
+	return $arr_dates;
+}
+
+
+
+
+
+/*-------------------------------------------------------------------	*/
+/* modifies a nont tutoring session	*/
+/*-------------------------------------------------------------------	*/
+function non_tut_session_mod_update($ses_id, $add_date, $start_time, $end_time, $tutor_id, $name, $email, $phone, $comments,$paid,$rate){
+	
+	$query = "select * from PT_Other_Appt where id = $ses_id";	
+	$res = runquery($query);
+	$row = mysql_fetch_array($res);
+	
+	if ($start_time!='')
+		$start_time = $start_time.":00";
+	if ($end_time!='')
+		$end_time = $end_time.":00";
+	
+	if ($add_date!=''){
+		$set1.=($set1!='' ? ', ' : '')."date='$add_date'";
+	}else
+		$add_date = $row['date'];
+	if ($start_time!=''){
+		$set1.=($set1!='' ? ', ' : '')."start_time='$start_time'";
+	}else
+		$start_time = $row['start_time'];
+	
+	if ($end_time!=''){
+		$set1.=($set1!='' ? ', ' : '')."end_time='$end_time'";
+	}else
+		$end_time = $row['end_time'];
+	if ($tutor_id!='')
+		$set1.=($set1!='' ? ', ' : '')."tutor_id='$tutor_id'";
+	if ($name!='')
+		$set1.=($set1!='' ? ', ' : '')."name='$name'";
+	if ($email!='')
+		$set1.=($set1!='' ? ', ' : '')."email='$email'";
+	if ($phone!='')
+		$set1.=($set1!='' ? ', ' : '')."phone='$phone'";
+	if ($comments!='')
+		$set1.=($set1!='' ? ', ' : '')."comments='$comments'";
+	if ($paid=='1')
+	{
+		$set1.=($set1!='' ? ', ' : '')."paid=1";
+		$set1.=($set1!='' ? ', ' : '')."rate='$rate'";	
+	}
+	else 
+	{
+		$set1.=($set1!='' ? ', ' : '')."paid=0";
+		$set1.=($set1!='' ? ', ' : '')."rate=''";	
+	}
+	
+			
+	
+	if ($name == '')
+		$name = $row['name'];
+	if (($add_date!='' && $row['date']!=$add_date) || ($start_time!='' && $row['start_time']!=$start_time) || ($row['end_time']!=$end_time) || ($tutor_id!='' && $row['tutor_id']!=$tutor_id) || ($name!='' && $row['name']!=$name)){
+		//mofify google calendar
+		set_time_limit(0);
+		$tar = get_tut_info($row['tutor_id']);
+		if (!$GLOBALS['x_conf_cal_token'])
+			$token = gc_login();
+		$row['hours'] = time_diff($row['end_time'], $row['start_time']);
+		del_goog_cal($token, $row['date'], $row['start_time'], $row['hours'], $row['name'], $tar['gc_username'],$tar['gc_name']);
+		if ($tutor_id && $tutor_id!=$row['tutor_id']){
+			$tar = get_tut_info($tutor_id);
+			if (!$GLOBALS['x_conf_cal_token'])
+				$token = gc_login();
+		}
+		$hours = time_diff($end_time, $start_time);
+		add_goog_cal($token, $add_date, $start_time, $hours, $name, $tar['gc_username'],$tar['gc_name']);
+		set_time_limit(60);
+	}
+	
+	
+	$res = "UPDATE PT_Other_Appt SET $set1 where id = $ses_id";
+	runquery($res);
+}
+ 
+ 
+ //--- new function for registering a student to the class
+ function class_add_student($student_id, $class_id, $paid, $due, $learning_disability, $extended_time, $tutor_id, $other = NULL, $deposit = NULL){
+	 // fetch details from PTStudentInfo_New
+	$SQS = "select * from PTStudentInfo_New where id = '".$student_id."'";  
+	$SRS = runquery($SQS);
+	$Sar = mysql_fetch_array($SRS);
+	$fid = $Sar['fid'];
+	$student_name = $Sar['first_name']." ".$Sar['last_name'];
+	$username = $Sar['first_name'];
+	$password = $Sar['last_name'];
+	  
+	 // fetch details from PT_Family_Info
+	$Fres = runquery("select * from PT_Family_Info where id = '".$fid."'");
+    $frow = mysql_fetch_array($Fres);   
+    $parent_name = $frow['main_name'];
+    $email = $frow['main_email'];
+    $phone_number = $frow['main_phone'];
+
+	// if fee is empty fetch it from PT_SAT_Class_Info 	
+	$res_cl = runquery("select * from PT_SAT_Class_Info WHERE id='".$class_id."'");
+    $row_cl = mysql_fetch_array($res_cl); 
+	$fee=$due;	
+	if($fee=='')
+	{
+		 $fee=$row_cl['cost']; 
+	}   
+	$error=0;
+	 
+	$insert1 = runquery("INSERT INTO PT_TestPrep_Reg(parent_name, student_name, username, password, phone_number, email, learning_disability, extended_time, class, paid, fee, fid, student_id, tutor_id) 	
+	VALUES('$parent_name', '$student_name', '$username', '$password', '$phone_number', '$email', '$learning_disability', '$extended_time', '$class_id', '$paid', '$fee', '$fid', '$student_id', '$tutor_id')");	
+	$getid=mysql_insert_id();
+ 	if(!$insert1)
+		$error=1;	
+		
+		// 
+		
+        if($deposit <> 0) {  // If they have to pay a deposit
+			
+			session_add2(date('Y-m-d'), "10:00:00", $fid, 1, 50, 0, 2000, '', $getid, $student_name,'','Deposit for LD SAT Prep Session '.$row_cl['class_name']);
+  		 	
+			$dep_rate = $dep_rate-50; // what they will have to 
+
+		 } // No Deposit
+          
+        if ($dep_rate > 0) { // don't send any bill if they have already paid everything
+		 	$dep_date = last_saturday_of_last_month($row_cl['start_date']);
+			session_add2($dep_date, "10:00:00", $fid, 1, $dep_rate,0, 2000, '', $getid, $student_name,'','For LD SAT Prep Session  '.$row_cl['class_name']);
+		}
+      //
+	
+		
+	$insert2 = runquery("INSERT INTO PTAddedApp(sid, family_id, student_id, date, start_time, hours, rate, pay, comments, name, tid, sched_id) 
+	VALUES('$fid', '$fid', '$student_id', '".date('Y-m-d')."','12:00:00' ,'1', '$fee', '0','Registration fee for Paul the Tutor\'s Class ".$row_cl['class_name']."', '$student_name', '2000', '0')");
+	if(!$insert2)
+		$error=1;
+		$testlocation=""; 
+		if($row_cl['test_location']==""){ 
+			$testlocation=$row_cl['location'];
+		}
+		else
+		{
+			$testlocation=$row_cl['test_location'];
+		}
+	
+	
+	
+	$ClQStr = "Update PT_SAT_Class_Info set enrolled = (enrolled+1) where id = '".$class_id."'";
+	$UPRS = runquery($ClQStr);
+	
+	
+	// send email
+	$mail_body =  "Dear $student_name,<br>
+<br>  
+You are registered for Paul the Tutor's LD SAT Prep Class ".$row_cl['class_name'].", which is scheduled to begin shortly. Please see the schedule of practice tests and classes below.
+Thanks,<br>
+<br>
+<strong>Classes</strong><br>
+Schedule: ".$row_cl['class_time']." <br> 
+Dates: ".$row_cl['SAT_date']." <br>
+Location: ".$row_cl['location']." <br>
+<br>
+<strong>Practice Tests</strong> <br>
+Intro Practice Test: ".$row_cl['practice_test_1']." <br>
+Final Practice Test: ".$row_cl['practice_test_2']." <br>
+Test Location: ".$testlocation." <br>
+<br> 
+You can view all information about your class by going to <a href='www.paulthetutors.com/parents'>www.paulthetutors.com/parents</a><br>
+<br> 
+<strong>Practice Test</strong> <br>
+Remember that practice tests are essential for a student's improvement on the SAT. If you have not done so already, let us know if your student will  receive extended time on the actual SAT so that we can have the correct number of extended time tests available. Make sure that your student knows whether or not they will receive extended time. 
+You can see the results of your practice tests by going to <a href='www.paulthetutors.com/parents'>www.paulthetutors.com/parents</a><br>
+<br>
+<strong>Missed Tests</strong><br>
+If you are unable to make the practice test, be sure to download a copy of the test and schedule here <a href='www.ldsatstudyguide.com/owners.php'>www.ldsatstudyguide.com/owners.php</a>   You will then be able to enter your answers and have the test automatically graded by going to <a href='http://www.paulthetutors.com/ldsatprep/students/satgrader.php'>http://www.paulthetutors.com/ldsatprep/students/satgrader.php</a> and entering your answers.
+<br><br>
+What to Bring to Class</strong><br>
+Students must bring all class materials and their calculator to each class. Students will receive their classroom material on the first day of class. With regards to calculators,  I strongly recommend a TI-83 or TI-84.
+<br><br>
+<strong>Missed Classes</strong><br>
+Recordings will be available online for students who miss a class. Additionally, private make-up sessions are available at our standard rates.
+<br><br>
+<strong>Homework</strong><br>
+Students are expected to complete all homework assignments, including readings. Most of the practice SAT questions can be graded online, and students will be expected to enter their answers and review their results before each class.
+You can check on your student's homework by going  to <a href='www.paulthetutors.com/parents'>www.paulthetutors.com/parents</a>
+<br><br>
+<strong>Payment</strong><br>
+Payment in full is due by the day of the first practice test. If you have not already received a bill through email, please contact us to let us know.
+You can view your bill at <a href='www.paulthetutors.com/parents'>www.paulthetutors.com/parents</a>
+<br><br>
+Please do not hesitate to contact us if you have any questions of concerns.<br>
+<br>
+Thanks,<br> 
+<br>
+Paul the Tutor's Education Center<br>
+info@paulthetutors.com <br>
+(510) 730-0390<br>
+www.paulthetutors.com<br> 
+4235 Piedmont Ave., Oakland, CA 94611"; 
+
+//--- set mail subject
+$mail_sub = "Registration in Paul the Tutor's ".$row_cl['class_name']." Prep Clas";
+//-- set mail headers
+// Always set content-type when sending HTML email
+$headers = "From: info@paulthetutors.com\r\n";
+$headers .= "Content-Type: text/html\r\n";
+//$headers .= "Reply-To: info@paulthetutors.com\r\n";
+$headers .= "CC: info@paulthetutors.com\r\n";
+//$headers .= "MIME-Version: 1.0\r\n";
+
+
+$mail_body="<html>
+	<head></head>
+	<body>".$mail_body."</body></html>";  
+
+if($error==0) //if data inserted succesfully, then send mail
+  mail('info@miviram.com', $mail_sub, $mail_body, $headers,'-finfo@paulthetutors.com'); 
+//	mail($email, $mail_sub, $mail_body, $headers,'-finfo@paulthetutors.com'); 
+
+return $error;	
+ }
+
+?>

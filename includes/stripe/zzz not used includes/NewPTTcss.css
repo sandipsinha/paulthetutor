@@ -1,0 +1,101 @@
+.Head1 {font-size: 16px; font-weight: bold; color: #000000}
+
+.Head1_Green {
+	font-size: 16px;
+	font-weight: bold;
+	color: #006633;
+	text-decoration: underline;
+}
+
+.Head2 {
+	font-size: 13px;
+	font-weight: bold;
+}
+
+.form_style{
+	font-size: 12px;
+	font-family : Comic Sans MS, Skia;
+}
+td,th {
+	font-size: 12px;
+		font-family : Comic Sans MS, Skia;
+		text-align: left;
+}
+body{
+	font-size: 12px;
+	font-family : "Comic Sans MS", Skia;
+	margin: 0px;
+	background-image: url(images/bg.gif);
+}
+.point_of_interest {
+	font-weight: normal;
+	text-decoration: underline;
+}
+.top_link {
+	color: #006633;
+	text-decoration: underline;
+	font-size: 16px;
+	font-weight: bold;
+	font-style: oblique;
+}
+.uline {
+	text-decoration: underline;
+}
+.maintable {
+	position: absolute;
+	top: 98px;
+	left: 45px;
+	overflow: visible;
+	z-index: -1;
+	border-top: 8px solid #996600;
+	border-right: 6px solid #996600;
+	border-bottom: 6px solid #996600;
+	border-left: 6px solid #996600;
+}
+
+.page_links {
+	position: absolute;
+	top: 67px;
+	left: 65px;
+	z-index: 1;
+	
+}
+
+.links_top {
+	position: absolute;
+	top: 65px;
+	left: 65px;
+	z-index: 3;
+	
+}
+
+.maintable2 {
+	position: absolute;
+	top: 55px;
+	left: 45px;
+	overflow: visible;
+	z-index: 0;
+	border-top: 8px solid #A58629;
+	border-right: 6px solid #A58629;
+	border-bottom: 6px solid #A58629;
+	border-left: 6px solid #A58629;
+}
+
+
+.logoboard {
+	z-index: 1;
+	left: 45px;
+	top: 10px;
+	position: absolute;
+	border: 0px;
+}
+
+.footer {
+	font-size: 10px;
+}.flowbg {
+	background-image: url(images/flowbg.gif);
+	background-position: right;
+}
+.form_comment {
+	font-size: 10px;
+}

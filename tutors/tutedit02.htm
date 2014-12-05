@@ -1,0 +1,134 @@
+<?php
+
+
+
+
+
+if(isset($_POST['username']))
+{
+	
+	$username = $_POST['username'];
+	$password = $_POST['password'];
+	
+	
+
+	$query = "SELECT * FROM PT_Tutors WHERE username = '$username' AND password = '$password'";
+
+}
+else if(isset($_SESSION['tutor_id']))
+{
+	$id = $_SESSION['tutor_id'];
+	$query = "SELECT * FROM PT_Tutors WHERE id = $id";
+	
+}
+
+
+
+
+if(isset($query))
+{
+	$result = mysql_query($query);
+	
+	if(mysql_num_rows($result)==0)
+		header("Location: tutedit01.php");
+	
+	$tutor = mysql_fetch_object($result);
+	
+	
+	$_SESSION['tutor_id'] = $tutor->id;
+}
+
+
+
+?>
+<link rel="stylesheet" type="text/css" href="/styles/paulthetutor.css" />
+<link rel="stylesheet" type="text/css" href="/styles/form.css" />
+
+
+
+
+<form method="post" action="tuteditput.php">  
+
+
+
+
+<fieldset>  
+<legend>Change Password</legend>  
+<ol>  
+<li>  
+<label for="old_password">Old Password</label>  
+<input id="old_password" name="old_password" class="text" type="password" value="" />  
+</li>  
+
+
+<li>  
+<label for="new_password">New Password</label>  
+<input id="new_password" name="new_password" class="text" type="password" value="" />  
+</li>  
+
+
+<li>  
+<label for="cnew_password">Confirm Password</label>  
+<input id="cnew_password" name="cnew_password" class="text" type="password" value="" />  
+</li>  
+
+</ol>
+</fieldset>
+
+<fieldset class="submit">  
+<input class="submit" type="submit" name="changepassword" 
+value="Save" />  
+</fieldset>  
+
+</form>
+
+<form method="post" action="tuteditput.php">  
+
+<input type="hidden" name="tid" value="<?=$tutor->id ?>" />
+
+<fieldset>  
+<legend>Update Info</legend>  
+<ol>  
+<li>  
+<label for="first_name">First Name</label>  
+<input id="first_name" name="first_name" class="text" type="text" value="<?=$tutor->first_name ?>" />  
+</li>  
+
+<li>  
+<label for="last_name">Last Name</label>  
+<input id="last_name" name="last_name" class="text" type="text" value="<?=$tutor->last_name ?>"/>  
+</li>  
+
+
+
+<li>  
+<label for="phone">Phone</label>  
+<input id="phone" name="phone" class="text" type="text" value="<?=$tutor->mobile_phone ?>"/>  
+</li>  
+
+
+<li>  
+<label for="email">Email</label>  
+<input id="email" name="email" class="text" type="text" value="<?=$tutor->email ?>"/>  
+</li>  
+
+
+<li>  
+<label for="subjects">Subjects</label>  
+<input id="subjects" name="subjects" class="text" type="text" value="<?=$tutor->subjects ?>"/>  
+</li>  
+
+
+<li>  
+<label for="bio">Bio</label>  
+<textarea id="bio" name="bio" class="text" rows="5" cols="50"><?=$tutor->bio ?></textarea>  
+</li>  
+
+ 
+</ol>  
+</fieldset>  
+<fieldset class="submit">  
+<input class="submit" type="submit"  
+value="Save" />  
+</fieldset>  
+</form>

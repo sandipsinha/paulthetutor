@@ -1,0 +1,1392 @@
+<?
+/*-------------------------------------------------------------------
+MySQL_JustForm()
+makes a form based on the values in a table  The form has two columns.
+	INPUTS
+		$tablename = name of the table to input data into
+		$arFieldNames = array of variables passed by the form
+		$arFieldVals = values that a field shoud have
+		$arFieldsComments
+		$arHidden = array of key, value that are to be hidden variables name and value
+		$strNotUsed = CSV of HTTP fields not used
+		$$tdStyle = style used for the <td> marker
+		$notable = "no table" tells the function not to add a new table, but continue with the old table.
+/*-------------------------------------------------------------------*/
+
+function MySQL_JustForm($strTableName, $arFieldNames=NULL, $arFieldsVals=NULL, $arFieldComments=NULL, $arHidden=NULL, $strNotUsed='', $formName="form1", $inputIndex='',$notable = 1){
+
+// if the values to skip are not passed $strNotUsed, get them from the PT_Table_Info table "Ignore_Fields" field
+if(isEmpty($strNotUsed)){
+	$strNotUsed = singlequery("select ignore_fields from PT_Table_Info where name = '$strTableName'");
+}	
+
+$arFieldVal = $arFieldsVals;
+
+if($notable == 0){
+?>
+<table border="3" bordercolor="#000000"  cellpadding="5" cellspacing="4">
+<?
+} // if notable == 0 put a new table
+//get the column info
+
+	$QStrCol = "SHOW FULL COLUMNS FROM $strTableName";
+	if(!($ColumnsRS = mysql_query($QStrCol))){
+		echo mysql_error() . "<BR>";
+		$problem = "<div align=\"center\"><b><font color=\"#FF0000\">Something went wrong.</font></b><br><br>";
+		$problem = "$problem Please go back and resubmit your information<br><br>$BackButton<BR><BR>Sorry for the trouble.</div>";
+	}
+
+// make the tablename a hidden variable
+	if(!(isEmpty($strTableName))){
+		putHiddenField("strTableName", $strTableName);
+	}
+	
+	if(!isEmpty($arHidden)){
+		while (list($key, $value) = each($arHidden)) {
+			putHiddenField($key, $value);
+		}
+	}
+
+	$strNotUsedArr = explode(",", $strNotUsed);
+		foreach ($strNotUsedArr as $k=>$v)
+				$strNotUsedArr[$k] = trim($v);
+
+	while($arColumn = mysql_fetch_array($ColumnsRS)){
+
+		//initialize $special
+		$special = "";
+                $disComments = '';
+		
+		$col_field = $arColumn["Field"];
+
+		//if it is not used, then skip it.
+		If(!(in_array($arColumn["Field"],$strNotUsedArr)) and ($arColumn["Extra"] <> "auto_increment")){
+
+			// If not comments has been passed for this field, put the comments from the table
+			if(!isset($arFieldComments[$col_field]) || isEmpty($arFieldComments[$col_field])){
+				$arFieldComments[$arColumn["Field"]] = $arColumn["Comment"];
+			}
+
+			//put the universal fields for the input form field
+
+			//check to see if this column is required
+			//if the column is "NOT NULL", has no default, is not autoincriminating, mark as required
+			If($arColumn["Null"] <> 'YES' and (($arColumn["Default"] == 0) or (isEmpty($arColumn["Default"]) or ($arColumn["Default"] == '0000-00-00')) ) ){
+				$special = "required";
+				
+				if(isset($arFieldNames[$arColumn["Field"]])){
+					$arRequired[$arColumn["Field"]] = $arFieldNames[$arColumn["Field"]];
+				} else {
+					$arRequired[$arColumn["Field"]] = setDisplayFieldVals($arColumn["Field"]);
+				}
+				
+			}
+
+	//dis and var Name
+			$varName = $arColumn["Field"].$inputIndex;
+			if(isset($arFieldNames[$arColumn["Field"]])){
+				$disName = $arFieldNames[$arColumn["Field"]];
+			} else {
+				$disName = setDisplayFieldVals($arColumn["Field"]);
+			}
+
+	// get the length, because it might be a varchar that we want in a text box
+			$varLen = substr($arColumn["Type"], strpos($arColumn["Type"], "(") + 1, -1);
+
+// IF IT IS AN ENUM
+			If(stristr($arColumn["Type"], "enum")){
+
+	//put the values of the enum into an array
+				$arEnumVals = MySQL_SetToArray($arColumn["Type"]);
+
+				putSelectInput($disName, $varName, $arEnumVals, $arFieldVal[$arColumn["Field"]], $arFieldComments[$arColumn["Field"]], $special);
+
+				continue;
+			}
+
+// IF IT IS AN SET
+			If(stristr($arColumn["Type"], "set")){
+
+	//put the values of the enum into an array
+				$arSetVals = MySQL_SetToArray($arColumn["Type"]);
+				$intRowLen = 1;
+
+				putCheckBoxesInput($disName, $varName, $arSetVals, $arFieldVal[$arColumn["Field"]], $intRowLen , $arFieldComments[$arColumn["Field"]], $special);
+
+				continue;
+			}
+
+// IF IT IS A DATE FIELD
+
+			If(($arColumn["Type"]) == "date" or ($arColumn["Type"] == "timestamp")){
+				//If(isset($arFieldVal[$arColumn["Field"]])){
+					//putTextField($disName, $varName, 11, 11, format_date_print($arFieldVal[$arColumn["Field"]]), $arFieldComments[$arColumn["Field"]], $special);
+
+				//} else {
+				putDateFieldPopup($disName, $varName, $arFieldVal[$arColumn["Field"]], $arFieldComments[$arColumn["Field"]],$special);
+				continue;
+			//}
+		}	
+		
+		If($arColumn["Type"] == "datetime"){
+				//If(isset($arFieldVal[$arColumn["Field"]])){
+					//putTextField($disName, $varName, 11, 11, format_date_print($arFieldVal[$arColumn["Field"]]), $arFieldComments[$arColumn["Field"]], $special);
+
+				//} else {
+				putDateTimeFieldPopup($disName, $varName, $arFieldVal[$arColumn["Field"]], $arFieldComments[$arColumn["Field"]],$special);
+				continue;
+			//}
+		}	
+// IF IT IS A PASSWORD FIELD
+			If(stristr($arColumn["Field"], "password")){
+
+				$varLen = 8;
+				$disLen = 8;
+				putPasswordInput($disName, $varName, $varLen, $disLen, $arFieldVal[$arColumn["Field"]]);
+				continue;
+			}
+			If(stristr($arColumn["Field"], "carrier_id")){
+
+				$varLen = 12;
+				$disLen = 10;
+				putCarrierSelect($disName, $varName, $varLen, $disLen, $arFieldVal[$arColumn["Field"]]);
+				continue;
+                        }
+			If(stristr($arColumn["Field"], "fid")){
+
+				$varLen = 12;
+				$disLen = 10;
+				putFamilySelect($disName, $varName, $varLen, $disLen, $arFieldVal[$arColumn["Field"]]);
+				continue;
+			}
+// IF IT IS AN INTEGER
+			If(stristr($arColumn["Type"], "int")){
+				$displayed = 0;
+				$varLen = substr($arColumn["Type"], strpos($arColumn["Type"], "(") + 1, -1);
+
+				$disLen = $varLen;
+				
+				//echo "type is $arColumn[Type] <BR>";
+				
+// IF IT IS A BOOLEAN
+			If($arColumn["Type"]=="tinyint(1)" or $varName == 'archived'){
+				
+				$folder = getfolder('','','');
+				
+				if($folder == "admin"){
+					$varVal = isset($arFieldVal[$arColumn["Field"]]) ? $arFieldVal[$arColumn["Field"]] : '';
+						putBoolInput($disName, $varName, $varVal, $strComment, $special);
+					
+				}
+				$displayed = 1;
+				
+			}
+
+
+			// if it is a tutors id
+				if($varName == 'tutor_id' or $varName == 'tid'){
+					$selected_tutor_id = isset($arFieldVal[$arColumn["Field"]]) ? $arFieldVal[$arColumn["Field"]] : '';
+		              $opts=array();
+		              $special=='required' && $opts['required']=true;
+					get_tutor_id($selected_tutor_id, $varName,'',$opts);
+					$displayed = 1;
+				} 
+
+			// if it is a employee id
+				if($varName == 'employee_id' or substr($varName,-4) == '_eid'){
+					$selected_employee_id = isset($arFieldVal[$arColumn["Field"]]) ? $arFieldVal[$arColumn["Field"]] : '';
+		              $opts=array();
+					  $field_name = $arColumn["Field"];
+		              $special=='required' && $opts['required']=true;
+					  $opts[all]=true;
+					get_tutor_id($selected_employee_id, $varName,'',$opts,$field_name);
+					$displayed = 1;
+				} 
+// if it's asking for a family_id				
+				if($varName == 'family_id'){
+						$selected_family_id = isset($arFieldVal[$arColumn["Field"]]) ? $arFieldVal[$arColumn["Field"]] : '';
+						  $opts=array();
+						  $special=='required' && $opts['required']=true;
+						put_fam_search("lone",$varName,$selected_family_id);
+						$displayed = 1;
+
+				} 	
+// if it's asking for a student				
+				if($varName == 'student_id'){
+						$selected_student_id = isset($arFieldVal[$arColumn["Field"]]) ? $arFieldVal[$arColumn["Field"]] : '';
+						  $opts=array();
+						  if ($opts['required']==true) {
+							  $special='required';							  
+						  }
+						  
+						  if(isEmpty($special)){
+							  $special = "nothing";
+						  }							
+						  
+						put_student_search ("lone", $varName, $selected_student_id, $arFieldComments[$arColumn["Field"]], $special, $special);
+						$displayed = 1;
+
+				} 	
+// if it's asking for a location
+				if($varName == 'location_id'){
+					$location_id = isset($arFieldVal[$arColumn["Field"]]) ? $arFieldVal[$arColumn["Field"]] : '';
+
+					$special=='required';
+					get_location_menu($location_id, "Location","location_id", "select a location", $arFieldComments[$arColumn["Field"]]);
+					$displayed = 1;
+
+					
+				}
+// if it's asking for a region
+				if($varName == 'region_id'){
+					$region_id = isset($arFieldVal[$arColumn["Field"]]) ? $arFieldVal[$arColumn["Field"]] : '';
+
+					$special=='required';
+					$QStr = "select id, name from PT_Regions order by id ASC";
+					SelectFromQuery($QStr, "Region", "region_id","",$region_id);
+					$displayed = 1;
+
+					
+				}
+// IF IT IS AN ENUM
+			If($varName == 'order_number'){
+
+	//put the values of the enum into an array
+				$arOrnums = array(1 => "High Priority", 2 => "Normal", 999 => "Low Priority");
+				$special = "required";
+
+				putSelectInput("Priority", $varName, $arOrnums, $arFieldVal[$arColumn["Field"]], $arFieldComments[$arColumn["Field"]], $special);
+
+					$displayed = 1;
+			}
+
+// if it's asking for a test type id
+				if($varName == 'test_type_id'){
+					$test_type_id = isset($arFieldVal[$arColumn["Field"]]) ? $arFieldVal[$arColumn["Field"]] : '';
+
+					$special=='required';
+					$QStr = "select id, abbreviation from TP_Type_Tests order by id ASC";
+					SelectFromQuery($QStr, "Test Type", $varName,"",$test_type_id);
+					$displayed = 1;
+
+					
+				}
+// if it's asking for a test type id
+				if($varName == 'test_source_id'){
+					$test_source_id = isset($arFieldVal[$arColumn["Field"]]) ? $arFieldVal[$arColumn["Field"]] : '';
+
+					//$special=='required';
+					$QStr = "select id, name from TP_Test_Sources order by id ASC";
+					SelectFromQuery($QStr, "Test Source", $varName,"",$region_id);
+					$displayed = 1;
+
+					
+				}
+// if it's asking for a test type
+				if($varName == 'test_type'){
+					$selected_test_id = isset($arFieldVal[$arColumn["Field"]]) ? $arFieldVal[$arColumn["Field"]] : '';
+
+					
+					get_test_type('',$varName,$selected_test_id);
+					$displayed = 1;
+
+					
+				}
+				if($displayed == 0){ // otherwise, but a text field	
+			
+				
+					putTextField($disName, $varName, $varLen, $disLen, $arFieldVal[$arColumn["Field"]], $arFieldComments[$arColumn["Field"]], $special);
+				}
+			continue;
+			}
+
+
+// IF IT IS AN DECIMAL
+			If(stristr($arColumn["Type"], "float") or stristr($arColumn["Type"], "decimal") or stristr($arColumn["Type"], "double")){
+				$varLen = substr($arColumn["Type"], strpos($arColumn["Type"], "(") + 1, -3);
+				$disLen = $varLen;
+
+				putTextField($disName, $varName, $varLen, $disLen, $arFieldVal[$arColumn["Field"]], $arFieldComments[$arColumn["Field"]], $special);
+			continue;
+			}
+
+
+// IF IT IS A SHORTER TEXT FIELD
+			If(stristr($arColumn["Type"], "char") and ($varLen < 61)){
+				$varLen = substr($arColumn["Type"], strpos($arColumn["Type"], "(") + 1, -1);
+				If($varLen > 35){
+					$disLen = 35;
+				} else {
+					$disLen = $varLen;
+				}
+		// get a text field into the table
+				putTextField($disName, $varName, $varLen, $disLen, $arFieldVal[$arColumn["Field"]], $arFieldComments[$arColumn["Field"]], $special);
+				continue;
+			}
+
+//IF IT IS A LONG VARCHAR
+			If( (stristr($arColumn["Type"], "char")) and ($varLen >= 61)){
+	// set the parameters for the text box
+				$TotalLen = substr($arColumn["Type"], strpos($arColumn["Type"], "(") + 1, -1);
+				$RowLen = 40;
+				$numRows = ceil($TotalLen / $RowLen);
+
+	// the user must be told of the max length, and then other comments are added
+				$disComment = "max $TotalLen charectors";
+				if(isset($arFieldComments[$arColumn["Field"]])){
+					$disComment = $disComment. " <BR>" . $arFieldComments[$arColumn["Field"]];
+				}
+
+
+
+				putTextBox($disName, $varName, $RowLen, $numRows, $arFieldVal[$arColumn["Field"]], $disComment, $special);
+
+				continue;
+			}
+
+// IF IT IS A TEXT FIELD
+			If(stristr($arColumn["Type"], "text")){
+
+				$RowLen = 40;
+				$numRows = 8;
+
+				putTextBox($disName, $varName, $RowLen, $numRows, $arFieldVal[$arColumn["Field"]], $arFieldComments[$arColumn["Field"]], $special);
+				continue;
+			}
+
+// IF IT IS A TIME FIELD
+			If($arColumn["Type"]=="time"){
+			
+$varVal = $arFieldVal[$arColumn["Field"]];			
+// echo " putTimeField($disName, $varName, $strComment, $varVal, $form_name, $other1, $other2)" ;
+ 
+				 putTimeField2($disName, $varName, $varVal, $strComment, $special); 
+				continue;
+			}
+
+		} // if the column is not in not use string, and is not auto_incrimented
+	}	// while we have
+
+return $arRequired;
+} // MySQL_JustForm
+
+
+
+
+/*--------------------------addslashes if !get_magic_quotes_gpc-----------------------------------------*/
+function array_addslashes(&$arr){
+	foreach($arr as $key=>$value){
+		if(is_array($value)){
+			array_addslashes($arr[$key]);
+		}else{
+			$arr[$key]=addslashes($value);
+		}
+	}
+}
+
+if (get_magic_quotes_runtime()) set_magic_quotes_runtime(0);
+if(!get_magic_quotes_gpc()){
+	array_addslashes($_GET);
+	array_addslashes($_POST);
+	array_addslashes($_REQUEST);
+	array_addslashes($_COOKIE);
+}
+
+
+/*-------------------------------------------------------------------
+MySQL_Connection()
+connects to the database
+	INPUT
+		$chost = name of host
+		$cusername = username
+		$cpasssword = ?
+		$cdatabase = name of the database
+/*-------------------------------------------------------------------	*/
+function MySQL_Connection($chost, $cusername, $cpassword, $cdatabase){
+
+	$ConnMySQL = mysql_pconnect($chost, $cusername, $cpassword);
+
+	mysql_select_db($cdatabase, $ConnMySQL);
+
+}
+
+
+/*-------------------------------------------------------------------
+MySQL_CheckInserts()
+displayes what has been entered into the table, and asks if everything is correct
+	INPUT $tablename = name of the table to input data into
+		$arHTTPFields = array of variables passed by the form
+		$arMandFields = manditory fields other than the non null fields in the table
+		$strNotUsed = CSV of HTTP fields not used (submit is not needed)
+		$strWhere
+/*-------------------------------------------------------------------	*/
+/* function MySQL_CheckInserts($strTableName, $arHTTPFields, $arFieldNames, $arFieldValues, $strNotUsed, $strUsed, $tdStyle){
+
+	$QStrCol = "SHOW COLUMNS FROM $strTableName";
+	if(!($ColumnsRS = mysql_query($QStrCol))){
+		echo mysql_error() . "<BR>";
+		$problem = "<div align=\"center\"><b><font color=\"#FF0000\">Something went wrong.</font></b><br><br>";
+		$problem = "$problem Please go back and resubmit your information<br><br>$BackButton<BR><BR>Sorry for the trouble.</div>";
+	}
+
+	while($arColumn = mysql_fetch_array($ColumnsRS)){
+
+		//if field is in strNotUsed, we don't use it.
+		if(!(stristr($strNotUsed, $arColumn["Field"]))){
+
+?>
+		   <tr>
+			<td>
+			  <div align="right">
+<?
+if(isset($arFieldNames[$arColumn["Field"]])){
+	$disName = $arFieldNames[$arColumn["Field"]];
+} else {
+	$disName = setDisplayFieldVals($arColumn["Field"]);
+}
+
+echo $disName;
+?>
+			  &nbsp;&nbsp;&nbsp;</div>
+			</td>
+			<td>
+<?
+			//if there is no value for it in the $arFieldValues array, just show the row
+			if(isEmpty($arFieldValues[$arColumn["Field"]])){
+				echo $arHTTPFields[$arColumn["Field"]];
+// finish possibly
+
+*/
+/*-------------------------------------------------------------------
+InsertFields()
+puts the fields passed in as arHTTPFields into the table strTableName
+	INPUT $tablename = name of the table to input data into
+		$arHTTPFields = array of variables passed by the form
+		$arMandFields = manditory fields other than the non null fields in the table
+		$strNotUsed = CSV of HTTP fields not used (submit is not needed)
+		$strWhere
+/*-------------------------------------------------------------------	*/
+
+function InsertFields($strTableName, $arHTTPFields, $arMandFields, $strNotUsed, $tdStyle){
+
+// echo "print $strTableName is table name<BR>";
+// printarray($arHTTPFields["start_time"]);
+
+// if problem is returned empty, than everything went as planned.
+	$problem = "";
+        
+        // Initialize needed variables
+	$QStrFields = '';
+        $QStrValues = '';
+        $missing = '';
+// echo "inside of insertfields for table $strTableName<BR>";	
+
+	$QStrCol = "SHOW COLUMNS FROM $strTableName";
+$ColumnsRS = runquery($QStrCol);
+	while($arColumn = mysql_fetch_array($ColumnsRS)){
+//printarray($arColumn);
+
+//if field is in strNotUsed, we don't use it
+		$strNotUsedArr = explode(",", $strNotUsed);
+		foreach ($strNotUsedArr as $k=>$v)
+				$strNotUsedArr[$k] = trim($v);
+		if(!(in_array($arColumn["Field"], $strNotUsedArr))){
+
+			if(($arColumn["Null"] <> 'YES') and (isEmpty($arColumn["Default"])) and ($arColumn["Extra"] <> "auto_increment") and (!(in_array($arColumn["Field"], $strNotUsedArr))) and (isEmpty($arHTTPFields[$arColumn["Field"]])) ){
+				$missing .= setDisplayFieldVals($arColumn["Field"]) . ", ";
+
+// echo "<BR>something is missing $missing<BR>";
+
+			} else {
+
+				//if nothing is missing, put the field and the value set in the Query string
+				if(isEmpty($missing)){
+					//put the field name in the QStr
+					$QStrFields .= $arColumn["Field"] . ", ";
+
+					// put the field value in the field.  If it is an array, put all the array values
+					
+					if(!(isEmpty($arHTTPFields[$arColumn["Field"]]))){
+						$tempvalue = $arHTTPFields[$arColumn["Field"]];
+
+// printarray($arHTTPFields[$arColumn["Field"]]);
+// echo  $arHTTPFields[$arColumn["Field"]]. "field has a value <BR> ";
+					} else {
+						 $tempvalue =  null;
+// echo "the field is null <BR>";
+					}
+
+					// if it is a set, get all the values in a string
+					if(substr($arColumn["Type"],0,3) == "set"){
+						if(is_array($tempvalue)) 
+							$tempvalue = implode(",", $tempvalue);
+					
+//echo "for $arColumn[Field] the tempvalue is now $tempvalue <BR>";			
+					
+					}	
+
+					// if it is a time, we need to convert to 24 hr clock
+					if($arColumn["Type"] == "time"){
+						
+// echo "in time<BR>";
+// printarray($tempvalue);
+						
+						if(is_array($tempvalue)) 
+							$tempvalue = format_time_db($tempvalue["hour"].":".$tempvalue["minutes"]." ".$tempvalue["ampm"]); 
+						
+ // echo "the final value is $tempvalue <BR>";						
+						
+					}	
+
+					// if the tempvalue is a date
+					if($arColumn["Type"] == "date"){
+
+// echo "<BR> tempvalue is";
+// printarray($tempvalue);
+
+						/*if(!(isEmpty($tempvalue[month]))){
+							$tempstr = "$tempvalue[year],$tempvalue[month],$tempvalue[day]";
+							$tempvalue = $tempstr;
+						} else {
+
+							$tempvalue = implode(",", $tempvalue);
+						}*/
+						$tempvalue = format_date_db($tempvalue);
+					}
+					
+					if($arColumn["Type"] == "datetime"){
+						if (isset($arHTTPFields[$arColumn["Field"]]["time"]["hour"])) {
+							$tempvalue = format_date_db($arHTTPFields[$arColumn["Field"]]["date"])." ".format_time_db($arHTTPFields[$arColumn["Field"]]["time"]["hour"].":".$arHTTPFields[$arColumn["Field"]]["time"]["minutes"]." ".$arHTTPFields[$arColumn["Field"]]["time"]["ampm"]); 
+						} else {
+							$tempvalue = format_date_db($tempvalue);
+						}
+					}	
+					//$tempvalue = str_replace("\"", "''", $tempvalue);
+					//$tempvalue = str_replace("'", "''", $tempvalue);
+					//$tempvalue = str_replace("\'", "''", $tempvalue);
+					//$tempvalue = str_replace("'''", "''", $tempvalue);
+					if(is_array($tempvalue)) 
+						$tempvalue = implode(",", $tempvalue);
+
+					$QStrValues .= "\"$tempvalue\", ";
+				} // if nothing is missing, set up the QStr
+			} //else (if the field is not missing, put into QStr)
+		} // if field is used
+	} // while looping through all of the fields
+
+	If(!(isEmpty($missing))) {
+		$missing = substr($missing, 0, -2);
+		$BackButton = getXBackButton(1);
+		$problem = "<div align=\"center\">The Following fields are missing:<BR><br>&nbsp;&nbsp;&nbsp; <b><font color=\"#FF0000\">$missing</font></b><br><br>";
+		$problem = "$problem Please go back and enter all required information.<br><br>$BackButton</div>";
+	}
+
+	if(isEmpty($problem)){
+		$QStrFields = substr($QStrFields, 0, -2);
+		$QStrValues = substr($QStrValues, 0, -2);
+		$QStr = "INSERT INTO $strTableName ( " . $QStrFields . " ) VALUES ( " . $QStrValues . " )";
+
+// echo "QStr: $QStr<BR><BR>";
+
+		$problem = runquery($QStr);
+
+	}
+
+	return $problem;
+}
+
+
+/*-------------------------------------------------------------------
+UpdateFields()
+puts the fields passed in as arHTTPFields into the table strTableName where $strWhere is true
+	into ladder
+	INPUT $tablename = name of the table to input data into
+		$arHTTPFields = array of variables passed by the form
+		$arMandFields = manditory fields other than the non null fields in the table
+		$strNotUsed = CSV of HTTP fields not used (submit is not needed)
+		$strWhere
+/*-------------------------------------------------------------------	*/
+
+function UpdateFields($strTableName, $arHTTPFields, $arMandFields, $strNotUsed, $tdStyle, $strWhere){
+	$QStrCol = "SHOW COLUMNS FROM $strTableName";
+	if(!($ColumnsRS = mysql_query($QStrCol))){
+		echo mysql_error() . "<BR>";
+		$problem = "<div align=\"center\"><b><font color=\"#FF0000\">Something went wrong.</font></b><br><br>";
+		$problem = "$problem Please go back and resubmit your information<br><br>$BackButton<BR><BR>Sorry for the trouble.</div>";
+	}
+	
+	$strNotUsedArr = explode(",", $strNotUsed);
+		foreach ($strNotUsedArr as $k=>$v)
+				$strNotUsedArr[$k] = trim($v);
+
+	while($arColumn = mysql_fetch_array($ColumnsRS)){
+
+
+		//if field is in strNotUsed, we don't use it.
+			if(!(in_array($arColumn["Field"], $strNotUsedArr))){
+				if(($arColumn["Null"] <> 'YES') and (isEmpty($arColumn["Default"])) and ($arColumn["Extra"] <> "auto_increment") and (!(in_array($arColumn["Field"], $strNotUsedArr))) and (isEmpty($arHTTPFields[$arColumn["Field"]])) ){
+				$missing .= setDisplayFieldVals($arColumn["Field"]) . ", ";
+			} else {
+				if(isEmpty($missing)){
+					//put the field name in the QStr
+					$QStr .= " " . $arColumn["Field"] . " = ";
+
+					// put the field value in the field.  If it is an array, put all the array values
+					$tempvalue = $arHTTPFields[$arColumn["Field"]];
+
+					//if it's a time
+					// if it is a time, we need to convert to 24 hr clock
+					if($arColumn["Type"] == "time"){
+						if(is_array($tempvalue)) 
+							$tempvalue = format_time_db($tempvalue["hour"].":".$tempvalue["minutes"]." ".$tempvalue["ampm"]); 
+					}	
+
+					// if it is a set, get all the values in a string
+					if(substr($arColumn["Type"],0,3) == "set"){
+						if(is_array($tempvalue)) 
+							$tempvalue = implode(",", $tempvalue);
+					}
+	
+					//if it's a date
+					if($arColumn["Type"] == "date"){
+						$tempvalue = format_date_db($tempvalue);
+					}
+					
+					if($arColumn["Type"] == "datetime"){
+						if (isset($arHTTPFields[$arColumn["Field"]]["time"]["hour"])) {
+							$tempvalue = format_date_db($arHTTPFields[$arColumn["Field"]]["date"])." ".format_time_db($arHTTPFields[$arColumn["Field"]]["time"]["hour"].":".$arHTTPFields[$arColumn["Field"]]["time"]["minutes"]." ".$arHTTPFields[$arColumn["Field"]]["time"]["ampm"]); 
+						} else {
+							$tempvalue = format_date_db($tempvalue);
+						}
+					}
+
+					// replace single quotes with 2 single quotes
+					//$tempvalue = str_replace("'", "''", $tempvalue);
+					//$tempvalue = str_replace('\"', "''", $tempvalue);
+					
+					
+					if(is_array($tempvalue)) 
+							$tempvalue = implode(",", $tempvalue);
+					
+					$QStr .= "\"$tempvalue\", ";
+				} // nothing is missing
+			} // this item is missing
+		} //if the field is to be used
+	} // while looping through all of the fields
+
+	If(!(isEmpty($missing))) {
+		$BackButton = getXBackButton(1);
+		$problem = "<div align=\"center\">The Following fields are missing:<BR><br>&nbsp;&nbsp;&nbsp; <b><font color=\"#FF0000\">$missing</font></b><br><br>";
+		$problem = "$problem Please go back and enter all required information.<br><br>$BackButton</div>";
+	}
+
+	if(!(isset($problem))){
+		$QStr = substr($QStr, 0, -2);
+		$QStr = "Update $strTableName SET " . $QStr . " where $strWhere";
+
+
+// echo "qstr $QStr<BR>";
+		runquery($QStr);
+	}
+
+	return $problem;
+}
+
+
+
+/*-------------------------------------------------------------------	*/
+/* gets the manditory (non-null) fields from a table			*/
+/*-------------------------------------------------------------------	*/
+function getMandFields($temptablename, $arMandFields, $strNotUsed){
+//get the manditory fields into $arMandFields
+	$QStr = "SHOW COLUMNS FROM $temptablename";
+	$ColumnsRS = mysql_query($QStr);
+	$strNotUsedArr = explode(",", $strNotUsed);
+		foreach ($strNotUsedArr as $k=>$v)
+				$strNotUsedArr[$k] = trim($v);
+
+	while($arColumn = mysql_fetch_array($ColumnsRS)){
+
+// if the field is not null, doesn't have a default value and the field is not in the strNotUsed string meaning it is to be entered
+
+		If(($arColumn["Null"] <> 'YES') and ($arColumn["Default"] <> "") and (!in_array($arColumn[Field], $strNotUsedArr))){
+			$arMandFields[$arColumn[Field]] = setDisplayFieldVals($arColumn[Field]);
+		}
+	}
+return $arMandFields;
+}
+
+/*-------------------------------------------------------------------	*/
+/* get default values if none are set					*/
+/*-------------------------------------------------------------------	*/
+function setDefaultFields($temptablename, $arHTTPFields, $strNotUsed){
+echo "inthe functin<BR>";
+
+//get the manditory fields into $arMandFields
+	$QStr = "SHOW COLUMNS FROM $temptablename";
+	$ColumnsRS = mysql_query($QStr);
+	$strNotUsedArr = explode(",", $strNotUsed);
+		foreach ($strNotUsedArr as $k=>$v)
+				$strNotUsedArr[$k] = trim($v);
+	while($arColumn = mysql_fetch_array($ColumnsRS)){
+
+// if the field is blank, but has a default value, give it that value
+
+		If((isEmpty($arHTTPFields[$arColumn[Field]])) and ($arColumn["Null"] <> 'YES') and ($arColumn["Default"] <> "") and (!in_array($arColumn[Field], $strNotUsedArr))){
+			$arHTTPFields[$arColumn[Field]] = $arColumn["Default"];
+echo "$arColumn[Field] . <BR>";
+		}
+	}
+return $arHTTPFields;
+}
+
+
+
+/*-------------------------------------------------------------------
+MySQL_MultiForms()
+makes a table with rows of forms
+	INPUTS
+		$tablename = name of the table to input data into
+		$arFieldNames = array of variables passed by the form
+		$arFieldVals = values that a field shoud have
+		$arFieldsComments
+		$strUse = CSV of table fields to use
+		$strNotUsed = CSV of HTTP fields not used
+		$$tdStyle = style used for the <td> marker
+		$numRows = the number of rows to be entered
+/*-------------------------------------------------------------------	*/
+
+function MySQL_MultiForms($strTableName, $arFieldNames, $arFieldComments, $strUse, $strNotUsed, $tdStyle, $numRows){
+
+//get the column info and store it in $arColsInfo[columnname][type]
+
+	$strNotUsedArr = explode(",", $strNotUsed);
+		foreach ($strNotUsedArr as $k=>$v)
+				$strNotUsedArr[$k] = trim($v);
+
+	$QStrCol = "SHOW COLUMNS FROM $strTableName";
+	if(!($ColumnsRS = mysql_query($QStrCol))){
+		echo mysql_error() . "<BR>";
+		$problem = "<div align=\"center\"><b><font color=\"#FF0000\">Something went wrong.</font></b><br><br>";
+		$problem = "$problem Please go back and resubmit your information<br><br>$BackButton<BR><BR>Sorry for the trouble.</div>";
+	}
+	$i = 0;
+
+	while($arColumn = mysql_fetch_array($ColumnsRS)){
+		//initialize $special and $i
+		$special = "";
+
+		//if it is not used, then skip it.
+		If(!(in_array($arColumn["Field"], $strNotUsedArr)) and ($arColumn["Extra"] <> "auto_increment")){
+
+			//check to see if this column is required
+			//if the column is "NOT NULL", has no default, is not autoincriminating, mark as required
+			If($arColumn["Null"] <> 'YES' and (($arColumn["Default"] == 0) or (isEmpty($arColumn["Default"]) or ($arColumn["Default"] == '0000-00-00')) ) ){
+				$special = "required";
+			}
+
+			//set all of the fields fot the cloums
+			$arColsInfo[$i][type] = $arColumn["Type"];
+			$arColsInfo[$i][varName] = $arColumn["Field"];
+			$arColsInfo[$i][disName] = setDisplayFieldVals($arColumn["Field"]);
+			$arColsInfo[$i][special] = $special;
+			$arColsInfo[$i][comments] = $arFieldComments[$arColumn["Field"]];
+
+			$i++;
+		}
+
+
+	} // looping through the columns and getting the ones we use
+
+	//put the row of headers
+
+	$lastField = $i - 1;
+
+	//go through the array of columns and put the headers
+	for($i = 0; $i <= $lastField; $i++){
+		echo "<td><div align=\"center\"><b>". $arColsInfo[$i][disName]."</b>";
+		if(!(isEmpty($arColsInfo[$i][special]))){
+			echo "<font color=\"#FF0000\">*</font>";
+		}
+
+		if(!(isEmpty($arColsInfo[$i][comments]))){
+		  	echo "<font size=\"-1\"><BR>($arColsInfo[$i][comments])</font> \n";
+		}
+
+		echo "</div></td>";
+	}
+
+	echo "</tr>";
+
+	for($j = 0; $j < $numRows; $j++){
+		echo "<tr>";
+
+		for($i = 0; $i <= $lastField; $i++){
+
+			// IF IT IS A DATE FIELD
+			If(stristr($arColsInfo[$i][type], "date") or stristr($arColsInfo[$i][type], "date")){
+
+				putDateCell("row[$j][date]");
+				continue;
+			}
+			// IF IT IS AN INTEGER
+			If(stristr($arColsInfo[$i][type], "int")){
+				$varLen = substr($arColsInfo[$i][type], strpos($arColsInfo[$i][type], "(") + 1, -1);
+				$disLen = $varLen;
+
+				echo "<td> <div align=\"center\">";
+				echo "<input type=\"text\" name=\"row[$j][" . $arColsInfo[$i][varName] . "]\" size=\"$disLen\" maxlength=\"$varLen\" value=\"$varVal\"> </div></td> \n";
+				continue;
+			}
+
+			// IF IT IS A TEXT FIELD
+			If(stristr($arColsInfo[$i][type], "char")){
+				$varLen = substr($arColsInfo[$i][type], strpos($arColsInfo[$i][type], "(") + 1, -1);
+				If($varLen > 12){
+					$disLen = 12;
+				} else {
+					$disLen = $varLen;
+				}
+				// get a text field into the table
+				echo "<td><div align=\"center\"><input type=\"text\" name=\"row[$j][" . $arColsInfo[$i][varName] . "]\" size=\"$disLen\" maxlength=\"$varLen\" value=\"$varVal\"></div></td> \n";
+				continue;
+			}
+
+
+			// IF IT IS AN ENUM
+			If(stristr($arColsInfo[$i][type], "enum")){
+
+				//put the values of the enum into an array
+				$arEnumVals = MySQL_SetToArray($arColsInfo[$i][type]);
+?>
+
+	        	<td><div align=\"center\"><select name="row[<?= $j. "][" .$arColsInfo[$i][varName] . "]"; ?>"
+ 				<option value=""></div></option>";
+<?
+				while (list ($key, $val) = each ($arEnumVals)) {
+					echo "<option value=\"$key\">$val </option> \n";
+				}
+				echo "</select></td>";
+				continue;
+			}
+		} //for loop that enters each colums
+
+	} // for loop that puts each row
+
+
+?>
+
+<input type="hidden" name="numRows" value="<?=$numRows; ?>">
+
+<?
+//END FUNCTION
+}
+
+
+/*-------------------------------------------------------------------
+MySQL_BlankForm()
+makes a form that the users uses to input a field into ladder
+	INPUTS
+		$tablename = name of the table to input data into
+		$arFieldNames = array of variables passed by the form
+		$arFieldVals = values that a field shoud have
+		$arFieldsComments
+		$arHidden = array of key, value that are to be hidden variables name and value
+		$strNotUsed = CSV of HTTP fields not used
+		$$tdStyle = style used for the <td> marker
+/*-------------------------------------------------------------------*/
+
+function MySQL_BlankForm($strTableName, $arFieldNames=NULL, $arFieldsVals=NULL, $arFieldComments=NULL, $arHidden=NULL, $strNotUsed=NULL, $formName="form1"){
+
+$arRequired = MySQL_JustForm($strTableName, $arFieldNames, $arFieldsVals, $arFieldComments, $arHidden, $strNotUsed, $formName);
+MySQL_JustForm_End($arRequired, $formName,'',$strNotUsed);
+} // MySQL_BlankForm
+
+/*-------------------------------------------------------------------*/
+
+function MySQL_JustForm_End($arRequired, $formName, $opts=null, $strNotUsed=NULL){ 
+$folder = getfolder('','','');
+if($folder <> 'admin') 
+	if(!(isEmpty($strNotUsed))){
+		$strNotUsed = "$strNotUsed,archived";
+	}else{
+		$strNotUsed = "archived";
+	}
+
+if(!(isEmpty($strNotUsed))) 
+		$strNotUsedArr = explode(",", $strNotUsed);
+
+!$opts && $opts['submitclear'] = true;
+(is_array($opts) && !isset($opts['submitclear'])) && $opts['submitclear'] = true;
+(is_string($opts) && $opts != "submitclear") && $opts = array('sumitclear'=>false, 'buttons_end'=>$opts);
+$opts == "submitclear" && $opts = array('submitclear'=>true);
+if (is_array($opts)) {
+  if (isset($opts['extra_input']))
+    echo $opts['extra_input'];
+?>
+<TR><td colspan="2"> <font color="#FF0000">*</font> indicates a required field</td></tr>
+<?
+  if ((isset($opts['submitclear']) && $opts['submitclear']))
+    putsubmitclear(); 
+  if (isset($opts['buttons_end']))
+    echo $opts['buttons_end'];
+}
+if(!(isEmpty($formName))){
+		$strForm = $formName;
+	} else {
+		$strForm = 'form1';
+	}
+?>
+</table>
+<script language="JavaScript" type="text/javascript">
+ var frmvalidator = new Validator("<?=$strForm;?>");
+<?
+while (list($key, $value) = each($arRequired)) {
+    //    ($key == "position") && $key = $key.'[]';
+	If(!(in_array($arColumn["Field"],$strNotUsedArr)))
+		echo "frmvalidator.addValidation(\"$key\",\"req\",\"You must enter a value for $value\");\n";
+}
+if($formName=="fam_register_form")
+  echo "frmvalidator.addValidation(\"can_policy\",\"req\",\"Please indicate you have read and understand the cancellation policy\");\n";
+  echo "frmvalidator.setAddnlValidationFunction(\"CheckEmails\");\n";
+echo "</script>";
+} // MySQL_JustForm_End
+
+
+/*-------------------------------------------------------------------
+mysql_set_str: returns the possible values for a set or enum as a string
+INPUTS $strColumn- name of the column that is an enum or a set
+	$strRemove - string seperated by commas that is all of the
+			values in the set that are to be removed
+	$varConnection - the link to the database
+OUTPUTS	$values
+ASSUMES	a connection to the database is there
+-------------------------------------------------------------------*/
+
+function mysql_set_str($strColumn, $strRemove, $varConnection){
+	$QStr = "SHOW COLUMNS FROM SFBayPlayerInfo LIKE '$strColumn'";
+	If ($LevelResults = mysql_query($QStr, $varConnection)){
+		If(mysql_affected_rows() == 1){
+			$strType = mysql_result($LevelResults,0,"Type");
+			$values = $strType;
+			$values = eregi_replace("enum", "", $values);
+			$values = eregi_replace("set", "", $values);
+			$values = ereg_replace(")", "", $values);
+			$values = ereg_replace('\(', "", $values);
+
+			$arRemove = array($strRemove);
+			while (list( ,$field) = each($arRemove)){
+				$values = eregi_replace("$field,", "", $values);
+				$values = eregi_replace(",$field", "", $values);
+			}
+			$values = ereg_replace("'", "", $values);
+			return $values;
+		}
+		return false;
+	} else {
+		return false;
+	}
+}
+
+/*-------------------------------------------------------------------
+mysql_set_array: returns the possible values for a set or enum as an array
+INPUTS $strColumn- name of the column that is an enum or a set
+	$strRemove - string seperated by commas that is all of the
+			values in the set that are to be removed
+	$varConnection - the link to the database
+OUTPUTS	$values
+ASSUMES	a connection to the database is there
+-------------------------------------------------------------------*/
+function mysql_set_array($strColumn=null, $strRemove,$SQL , $varConnection)
+{   $QStr =   "SHOW COLUMNS FROM PT_First_Contact LIKE  'Status'"    ;
+        //$row = mysql_fetch_array($res);
+    If ($LevelResults = runquery($QStr)){
+		If(mysql_affected_rows() == 1){
+             			$strType = mysql_result($LevelResults,0,"Type");
+			$values = $strType;
+			$values = eregi_replace("enum", "", $values);
+			$values = eregi_replace("set", "", $values);
+			$values = ereg_replace(")", "", $values);
+			$values = ereg_replace('\(', "", $values);
+            if ($strRemove != "")
+     			{$arRemove = array($strRemove);
+                 $values = removesetvals($values, $arRemove);
+                }
+
+//echo "$values are values and $strRemove<BR>";
+//printarray($arRemove);
+
+			//remvoe the removes
+
+
+			//turn the strings into an array
+			$temparray = explode(",", $values);
+
+			while(list( , $field) = each($temparray)){
+				$returnarray[$field] = $field;
+			}
+
+
+			return $returnarray;
+		}
+		return false;
+	} else {
+		return false;
+	}
+   }
+
+
+/*-------------------------------------------------------------------
+putsetvals: puts values at the end of the set
+INPUTS $strSet- values of the set
+	$arAdd - values to be added (add field values)
+
+OUTPUTS	$strSet
+-------------------------------------------------------------------*/
+function putsetvals($strSet, $arAdd){
+	if(isset($arAdd)){
+		while(list(, $addval) = each($arAdd)){
+			$strSet .= $addval . ", ";
+		}
+		$strSet = substr($strSet, 0 , -2);
+	}
+	return $strSet;
+}
+
+
+/*-------------------------------------------------------------------
+removesetvals: removes values from the values of the set in string form
+INPUTS $strSet- values of the set
+	$arRemove - values to be removed (in an array)
+
+OUTPUTS	$strSet
+-------------------------------------------------------------------*/
+function removesetvals($strSet, $arRemove){
+//echo "1st set $strSet<BR>";
+//printarray($arRemove);
+//echo "2nd passt<BR><BR>";
+	if(isset($arRemove)){
+		while(list(, $removeval) = each($arRemove)){
+//echo "set $strSet val $removeval<BR>";
+			//REMOVE THE VALUE FROM THE SET STRING
+			if(strstr($strSet, $removeval . ",")){
+
+				$strSet = str_replace($removeval . ",", "", $strSet);
+//echo "$strSet is first removes<BR>";
+			}
+
+			if(strstr($strSet, "," . $removeval)){
+				$strSet = str_replace("," . $removeval, "", $strSet);
+//echo "$strSet is second removes<BR>";
+			}
+
+		}
+	}
+	return $strSet;
+}
+
+
+/*-------------------------------------------------------------------
+MySQL_SetToArray: gets the values of an enum or set, and puts them into an array
+INPUTS $strFieldsType
+
+OUTPUTS	$arSetVals
+-------------------------------------------------------------------*/
+
+function MySQL_SetToArray($strFieldsType){
+	$values = $strFieldsType;
+	$values = preg_replace("/enum/i", "", $values);
+	$values = preg_replace("/set/i", "", $values);
+	$values = preg_replace("/\)/", "", $values);
+	$values = preg_replace('/\(/', "", $values);
+	$values = preg_replace("/'/", "", $values);
+
+	//turn the strings into an array
+
+	// make sure that the first value is "" and then remove it
+	// the keys must start with 1 not 0
+	$arTempVals = explode(",", $values);
+	while(list( , $tempval) = each($arTempVals)){
+		$arSetVals[$tempval] = $tempval;
+	}
+	return $arSetVals;
+}
+
+
+/*-------------------------------------------------------------------
+mysql_dis_date: gets a date from a mysql table and makes it a
+displayable string
+
+OUTPUTS	$disDate
+-------------------------------------------------------------------*/
+
+function mysql_dis_date($mysqlDate){
+
+	$arDates = explode("-", $mysqlDate);
+
+	$strDate = "$arDates[1]/$arDates[2]/$arDates[0]";
+
+	return $strDate;
+}
+
+/*-------------------------------------------------------------------
+mysql_store_date: gets an entered date in an array [day], [month], [year],
+and puts it into a string that is right for mysql storage
+
+OUTPUTS	$storeDate
+-------------------------------------------------------------------*/
+
+function mysql_store_date($arDate){
+
+	$storeDate = $arDate[year] ."-". $arDate[month] ."-". $arDate[day];
+
+	return $storeDate;
+}
+
+/*-------------------------------------------------------------------
+MySQL_sendemail: gives you the name of all members of a database, and
+a text box for the e-mail messages
+
+OUTPUTS	$storeDate
+-------------------------------------------------------------------*/
+function MySQL_SendEmail($strTableName){
+
+	$QStr = "select concat(firstname, ' ', lastname) as username, email from $strTableName";
+	if(!($RS = mysql_query($QStr))){
+		echo $QStr . "<BR>" . mysql_error();
+	}
+
+
+	$arEmails[All] = "ALL";
+
+	while($arUserInfo = mysql_fetch_array($RS)){
+		$arEmails[$arUserInfo[email]] = $arUserInfo[username];
+	}
+
+	putSelectInput("User", "messAddress", $arEmails, '', '', '');
+ 	echo "<tr><td colspan=2><hr></td></td>";
+
+	putTextInput("Subject", messSubject,30,30,'','','');
+	putTextBox("Body", messBody, 30, 15, '','', '');
+}
+
+
+/*-------------------------------------------------------------------
+runquery(): send in a SQL query, and either run it,
+or say what is wrong.
+
+OUTPUTS	$RS
+-------------------------------------------------------------------*/
+function runquery($QStr, $mode = "run"){
+	if($mode == "show" or mode == "showrun"){
+		echo('<BR> Query from runquery is $QStr <BR>');
+		echo("<BR> Query from runquery is $QStr <BR><BR>");
+	}
+	
+	if($mode == "run" or $mode == "showrun"){
+//figure out the type of querry
+		
+		if((($inspos !== false) and ($inspos < 3)) or (($delpos !== false) and ($delpos < 3)) or (($uppos !== false) and ($uppos < 3))){
+			$RS = mysql_insert_id();
+		}
+		
+			$type = explode(' ',trim($QStr));
+			$qtype = $type[0];
+
+			$QStrX = mysql_real_escape_string($QStr);	
+			$IQS = "Insert into ZZ_Queries_All (query,type) values ('$QStrX','$qtype')";
+			if(!($IRS = mysql_query($IQS))){
+				echo $QStr . " MY Insert Error<BR>" . mysql_error() . "<BR>";
+			}
+			
+			if(stripos(" $qtype","select")===FALSE){
+					$IQS = "Insert into ZZ_Queries_NoSelect (query,type) values ('$QStrX','$qtype')";
+					if(!($IRS = mysql_query($IQS)))
+						echo $QStr . " MY Insert Error<BR>" . mysql_error() . "<BR>";
+			}
+
+
+// where we actually run the query
+		if(!($RS = mysql_query($QStr))){
+			echo $QStr . "<BR>" . mysql_error() . "<BR>";
+			$RS = mysql_error();
+		} else {
+		
+			$inspos = stripos($QStr,"insert");
+			$delpos = stripos($QStr,"delete");
+			$uppos = stripos($QStr,"update");
+			
+			if(($inspos !== false) and ($inspos < 3)){
+				$RS = mysql_insert_id();
+			}
+		}
+		
+	}
+	return $RS;
+}
+/*-------------------------------------------------------------------
+singlequery(): returns the value of a single value query.
+input recordset
+-------------------------------------------------------------------*/
+function singlequery($tQStr){
+	$RS = runquery($tQStr);
+$testAR = mysql_fetch_array($RS);
+$val = $testAR[0];
+
+return $val;
+}
+
+
+
+/*-------------------------------------------------------------------
+rowquery(): returns all of the values of the first row of a query.
+
+input query string
+
+-------------------------------------------------------------------*/
+function rowquery($tQStr){
+	$RS = runquery($tQStr);
+$testAR = mysql_fetch_array($RS);
+
+return $testAR;
+}
+
+
+
+
+/*-------------------------------------------------------------------
+MySQL_fillArray(): puts info into an array for use in fill table.
+
+INPUT
+	$strKey - field in table that will be the key
+	$strField - field in the table that will be the show field
+	$strTableName - name of the table to get fields from
+
+OUTPUT
+	$arValues
+
+-------------------------------------------------------------------*/
+function MySQL_fillArray($strKey, $strField, $strTableName, $where = " where 1 = 1 ", $orderby = NULL, $order = "ASC"){
+	if(!$orderby)
+		$orderby = $strKey;
+	
+	
+	$QStr = "select $strKey, $strField from $strTableName $where order by $orderby $order ";
+
+	$RS = runquery($QStr);
+
+	while($arFields = mysql_fetch_row($RS)){
+		$arArInfo[$arFields[0]] = $arFields[1];
+	}
+
+	return $arArInfo;
+}
+
+/*-------------------------------------------------------------------
+MySQL_column_string(): puts fields from a single query into a string.
+
+-------------------------------------------------------------------*/
+function MySQL_column_string($QStr, $separator = ","){
+	$RS = runquery($QStr);
+	
+	$strResult = "";
+	while($arFields = mysql_fetch_row($RS)){
+		$strResult .= "$arFields[0]$separator ";
+	}
+	
+	$strResult = substr($strResult, 0 , -2);
+	return $strResult;
+	
+}
+
+
+/*-------------------------------------------------------------------	*/
+/* set the key and Values for common table fields						*/
+/* MUST BE PUT BACK INTO SPECIAL.php									*/
+/*-------------------------------------------------------------------	*/
+
+Function setDisplayFieldVals($strField){
+
+//echo "string field $strField<br>";
+
+	$strField = str_replace("no_","Number of ", $strField);
+	$strField = str_replace("num_","Number of ", $strField);
+	$strField = str_replace("username","Username", $strField);
+	$strField = str_replace("password","Password", $strField);
+	$strField = str_replace("firstname","First Name",$strField);
+	$strField = str_replace("lastname","Last Name", $strField);
+	$strField = str_replace("phone","Phone Number", $strField);
+	$strField = str_replace("address1","Address", $strField);
+	$strField = str_replace("address2","Address 2", $strField);
+	$strField = str_replace("_"," ", $strField);
+
+	$arField = explode( " ", $strField);
+//echo $strField . "1<BR>";
+	while(list($key,$field) = each($arField)){
+//		echo "$key $field $arField[$key]<BR>";
+		$arField[$key] = ucfirst($field);
+//		echo "$key $field $arField[$key]<BR>";
+	}
+//echo $strField . "2<BR>";
+
+	$strField = implode(" ", $arField);
+
+//echo $strField . "3<BR><BR><BR>";
+
+	$return = $strField;
+	return $return;
+}
+
+/*-------------------------------------------------------------------	*/
+/* getIgnoredColumns													*/
+/* finds the clums in a table that should not be entered by a user		*/
+/* input - strTable	- the table whose columns are to be ignored	*/
+/* 			strTableInfo - the table that stores the data about strTable */
+/* output - strIgnoreColumns		*/
+/*-------------------------------------------------------------------	*/
+
+Function getIgnoreColumns($strTableName, $strTableInfo,$archive=0){
+
+	$QStr = "select ignore_fields from $strTableInfo where name = '$strTableName'";
+	$RSI = runquery($QStr);
+
+	$row = mysql_fetch_assoc($RSI);
+
+	$strNotUsed =  $row['ignore_fields'];
+	if(!($archive))
+		$strNotUsed .= ",archive,archived";
+
+	return $strNotUsed;
+}
+/*-------------------------------------------------------------------	*/
+/* enumDropdown													*/
+/* finds the clums in a table that should not be entered by a user		*/
+/* input - strTable	- the table whose columns are to be displayed	*/
+/* 			$column_name - the columns whose values need to be in a drop down */
+/* output - the drop down values		*/
+/*-------------------------------------------------------------------	*/
+/*Function enumDropdown($strTable, $column_name, $fieldvalue=null,$id=null,$echo = false)
+{
+   $selectDropdown = "<select name=\"$column_name\"  id='$column_name"."_input". "$id'>";
+   $QStr = "SELECT COLUMN_TYPE FROM INFORMATION_SCHEMA.COLUMNS
+       WHERE TABLE_NAME = '$strTable' AND COLUMN_NAME = '$column_name'";
+   $RSI = runquery($QStr);
+
+    $row = mysql_fetch_array( $RSI);
+    $enumList = explode(",", str_replace("'", "", substr($row['COLUMN_TYPE'], 5, (strlen($row['COLUMN_TYPE'])-6))));
+
+    foreach($enumList as $value)
+         $selectDropdown .= "<option value=\"$value\">$value</option>";
+
+    $selectDropdown .= "</select>";
+
+    if ($echo)
+        echo $selectDropdown;
+
+    return $selectDropdown;
+} */
+
+
+
+
+?>
